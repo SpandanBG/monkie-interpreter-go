@@ -5,5 +5,8 @@ build:
 dev:
 	go run src/main.go
 
+repl:
+	go run src/main.go --repl
+
 test:
 	go test -coverprofile=coverage.out ./...
