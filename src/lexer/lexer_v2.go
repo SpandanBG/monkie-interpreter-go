@@ -63,7 +63,7 @@ func (l_v2 *Lexer_V2) NextToken_V2() token.Token {
 			return tok
 		} else if isDigit_v2(l_v2.ch) {
 			tok.Literal = l_v2.readGroup_v2(isDigit_v2)
-			tok.Type = token.INT 
+			tok.Type = token.INT
 			return tok
 		} else {
 			tok = token.Token{Type: token.ILLEGAL, Literal: string(l_v2.ch)}
