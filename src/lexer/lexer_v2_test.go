@@ -58,6 +58,11 @@ func Test_NextToken_V2(t *testing.T) {
   } else {
     return false;
   }
+
+  5 == 10;
+  5 != 10;
+  5 >= 10;
+  5 <= 10;
   `)
 
 	expectedTokens := []token.Token{
@@ -113,6 +118,22 @@ func Test_NextToken_V2(t *testing.T) {
 		{Type: token.FALSE, Literal: "false"},
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.RBRACE, Literal: "}"},
+		{Type: token.INT, Literal: "5"},
+		{Type: token.EQ, Literal: "=="},
+		{Type: token.INT, Literal: "10"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.INT, Literal: "5"},
+		{Type: token.NOT_EQ, Literal: "!="},
+		{Type: token.INT, Literal: "10"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.INT, Literal: "5"},
+		{Type: token.GTE, Literal: ">="},
+		{Type: token.INT, Literal: "10"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.INT, Literal: "5"},
+		{Type: token.LTE, Literal: "<="},
+		{Type: token.INT, Literal: "10"},
+		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.EOF, Literal: "\x00"},
 	}
 

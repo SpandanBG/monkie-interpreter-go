@@ -27,7 +27,15 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.ch {
 	case '=':
-		tok = token.Token{Type: token.ASSIGN, Literal: string(l.ch)}
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			literal := string([]byte{ch, l.ch})
+
+			tok = token.Token{Type: token.EQ, Literal: literal}
+		} else {
+			tok = token.Token{Type: token.ASSIGN, Literal: string(l.ch)}
+		}
 	case '+':
 		tok = token.Token{Type: token.PLUS, Literal: string(l.ch)}
 	case '(':
@@ -49,11 +57,35 @@ func (l *Lexer) NextToken() token.Token {
 	case '/':
 		tok = token.Token{Type: token.SLASH, Literal: string(l.ch)}
 	case '!':
-		tok = token.Token{Type: token.BANG, Literal: string(l.ch)}
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			literal := string([]byte{ch, l.ch})
+
+			tok = token.Token{Type: token.NOT_EQ, Literal: literal}
+		} else {
+			tok = token.Token{Type: token.BANG, Literal: string(l.ch)}
+		}
 	case '>':
-		tok = token.Token{Type: token.GT, Literal: string(l.ch)}
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			literal := string([]byte{ch, l.ch})
+
+			tok = token.Token{Type: token.GTE, Literal: literal}
+		} else {
+			tok = token.Token{Type: token.GT, Literal: string(l.ch)}
+		}
 	case '<':
-		tok = token.Token{Type: token.LT, Literal: string(l.ch)}
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			literal := string([]byte{ch, l.ch})
+
+			tok = token.Token{Type: token.LTE, Literal: literal}
+		} else {
+			tok = token.Token{Type: token.LT, Literal: string(l.ch)}
+		}
 	case 0:
 		tok = token.Token{Type: token.EOF, Literal: ""}
 	default:
@@ -74,6 +106,16 @@ func (l *Lexer) NextToken() token.Token {
 
 	l.readChar()
 	return tok
+}
+
+// peekChar - returns the character at the `readPosition`. 0 if at the end of
+// the input. Doesn't modify the lexer object
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	}
+
+	return l.input[l.readPosition]
 }
 
 // readChar - updates `ch` to the character in `readPosition`.

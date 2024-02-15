@@ -27,7 +27,15 @@ func (l_v2 *Lexer_V2) NextToken_V2() token.Token {
 
 	switch l_v2.ch {
 	case rune('='):
-		tok = token.Token{Type: token.ASSIGN, Literal: string(l_v2.ch)}
+		if l_v2.peekChar_v2() == rune('=') {
+			ch := l_v2.ch
+			l_v2.readChar_v2()
+			literal := string([]rune{ch, l_v2.ch})
+
+			tok = token.Token{Type: token.EQ, Literal: literal}
+		} else {
+			tok = token.Token{Type: token.ASSIGN, Literal: string(l_v2.ch)}
+		}
 	case rune('+'):
 		tok = token.Token{Type: token.PLUS, Literal: string(l_v2.ch)}
 	case rune('('):
@@ -49,11 +57,35 @@ func (l_v2 *Lexer_V2) NextToken_V2() token.Token {
 	case rune('/'):
 		tok = token.Token{Type: token.SLASH, Literal: string(l_v2.ch)}
 	case rune('!'):
-		tok = token.Token{Type: token.BANG, Literal: string(l_v2.ch)}
+		if l_v2.peekChar_v2() == rune('=') {
+			ch := l_v2.ch
+			l_v2.readChar_v2()
+			literal := string([]rune{ch, l_v2.ch})
+
+			tok = token.Token{Type: token.NOT_EQ, Literal: literal}
+		} else {
+			tok = token.Token{Type: token.BANG, Literal: string(l_v2.ch)}
+		}
 	case rune('>'):
-		tok = token.Token{Type: token.GT, Literal: string(l_v2.ch)}
+		if l_v2.peekChar_v2() == rune('=') {
+			ch := l_v2.ch
+			l_v2.readChar_v2()
+			literal := string([]rune{ch, l_v2.ch})
+
+			tok = token.Token{Type: token.GTE, Literal: literal}
+		} else {
+			tok = token.Token{Type: token.GT, Literal: string(l_v2.ch)}
+		}
 	case rune('<'):
-		tok = token.Token{Type: token.LT, Literal: string(l_v2.ch)}
+		if l_v2.peekChar_v2() == rune('=') {
+			ch := l_v2.ch
+			l_v2.readChar_v2()
+			literal := string([]rune{ch, l_v2.ch})
+
+			tok = token.Token{Type: token.LTE, Literal: literal}
+		} else {
+			tok = token.Token{Type: token.LT, Literal: string(l_v2.ch)}
+		}
 	case rune(0):
 		tok = token.Token{Type: token.EOF, Literal: string(l_v2.ch)}
 	default:
@@ -72,6 +104,17 @@ func (l_v2 *Lexer_V2) NextToken_V2() token.Token {
 
 	l_v2.readChar_v2()
 	return tok
+}
+
+func (l_v2 *Lexer_V2) peekChar_v2() rune {
+	ch, _, err := l_v2.input.ReadRune()
+	if err != nil {
+		ch = rune(0)
+	} else {
+		l_v2.input.UnreadRune()
+	}
+
+	return ch
 }
 
 func (l_v2 *Lexer_V2) readChar_v2() {

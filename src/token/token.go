@@ -31,8 +31,12 @@ const (
 	SLASH              = "/"
 
 	// Equality
-	GT TokenType = ">"
-	LT           = "<"
+	GT     TokenType = ">"
+	LT               = "<"
+	EQ               = "=="
+	NOT_EQ           = "!="
+	GTE              = ">="
+	LTE              = "<="
 
 	// Delimiters
 	COMMA     TokenType = ","
