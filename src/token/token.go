@@ -23,8 +23,16 @@ const (
 	INT             = "INT"   // 12345
 
 	// Operators
-	ASSIGN TokenType = "="
-	PLUS             = "+"
+	ASSIGN   TokenType = "="
+	PLUS               = "+"
+	MINUS              = "-"
+  BANG               = "!"
+	ASTERISK           = "*"
+	SLASH              = "/"
+
+	// Equality
+	GT TokenType = ">"
+	LT           = "<"
 
 	// Delimiters
 	COMMA     TokenType = ","

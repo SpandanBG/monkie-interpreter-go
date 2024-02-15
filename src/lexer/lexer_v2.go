@@ -42,6 +42,18 @@ func (l_v2 *Lexer_V2) NextToken_V2() token.Token {
 		tok = token.Token{Type: token.COMMA, Literal: string(l_v2.ch)}
 	case rune(';'):
 		tok = token.Token{Type: token.SEMICOLON, Literal: string(l_v2.ch)}
+	case rune('-'):
+		tok = token.Token{Type: token.MINUS, Literal: string(l_v2.ch)}
+	case rune('*'):
+		tok = token.Token{Type: token.ASTERISK, Literal: string(l_v2.ch)}
+	case rune('/'):
+		tok = token.Token{Type: token.SLASH, Literal: string(l_v2.ch)}
+	case rune('!'):
+		tok = token.Token{Type: token.BANG, Literal: string(l_v2.ch)}
+	case rune('>'):
+		tok = token.Token{Type: token.GT, Literal: string(l_v2.ch)}
+	case rune('<'):
+		tok = token.Token{Type: token.LT, Literal: string(l_v2.ch)}
 	case rune(0):
 		tok = token.Token{Type: token.EOF, Literal: string(l_v2.ch)}
 	default:

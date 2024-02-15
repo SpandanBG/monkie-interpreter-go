@@ -8,7 +8,7 @@ import (
 )
 
 func Test_BaseNew_V2(t *testing.T) {
-	input := strings.NewReader("=+(){},;")
+	input := strings.NewReader("=+(){},;-!*/><")
 
 	expectedTokens := []token.Token{
 		{Type: token.ASSIGN, Literal: "="},
@@ -19,6 +19,12 @@ func Test_BaseNew_V2(t *testing.T) {
 		{Type: token.RBRACE, Literal: "}"},
 		{Type: token.COMMA, Literal: ","},
 		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.MINUS, Literal: "-"},
+		{Type: token.BANG, Literal: "!"},
+		{Type: token.ASTERISK, Literal: "*"},
+		{Type: token.SLASH, Literal: "/"},
+		{Type: token.GT, Literal: ">"},
+		{Type: token.LT, Literal: "<"},
 		{Type: token.EOF, Literal: "\x00"},
 	}
 
