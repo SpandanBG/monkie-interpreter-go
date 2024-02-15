@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"strings"
 
 	"sudocoding.xyz/interpreter_in_go/src/lexer"
 	"sudocoding.xyz/interpreter_in_go/src/token"
@@ -29,9 +30,9 @@ func Start(in io.Reader, out io.Writer) {
 			return
 		}
 
-		l := lexer.New(line)
+		l := lexer.New_V2(strings.NewReader(line))
 
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
+		for tok := l.NextToken_V2(); tok.Type != token.EOF; tok = l.NextToken_V2() {
 			fmt.Fprintf(out, "%+v\n", tok)
 		}
 	}
