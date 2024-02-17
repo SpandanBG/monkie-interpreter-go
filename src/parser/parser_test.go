@@ -21,6 +21,17 @@ func notEq[T comparable](t *testing.T, expected T, actual T, msg ...string) {
 	}
 }
 
+func testLetStatement(t *testing.T, stmt ast.Statement, expectedName string) bool {
+		eq(t, "let", stmt.TokenLiteral(), "Got non let statement")
+
+		letStmt, ok := stmt.(*ast.LetStatement)
+
+		eq(t, true, ok, "Failed to typecast statement to let statement")
+		eq(t, expectedName, letStmt.Name.Value, "Identifier name didn't match")
+		eq(t, expectedName, letStmt.Name.TokenLiteral(), "Token literal of identifier didn't match the identifier name")
+    return true
+}
+
 func Test_LetStatements(t *testing.T) {
 	input := `let x = 5;
   let y = 10;
@@ -39,12 +50,6 @@ func Test_LetStatements(t *testing.T) {
 		stmt := program.Statements[i]
 
 		notEq(t, nil, stmt, "Got null statement at", strconv.Itoa(i))
-		eq(t, "let", stmt.TokenLiteral(), "Got non let statement")
-
-		letStmt, ok := stmt.(*ast.LetStatement)
-
-		eq(t, true, ok, "Failed to typecast statement to let statement")
-		eq(t, expectedIdentifier, letStmt.Name.Value, "Identifier name didn't match")
-		eq(t, expectedIdentifier, letStmt.Name.TokenLiteral(), "Token literal of identifier didn't match the identifier name")
+    eq(t, true, testLetStatement(t, stmt, expectedIdentifier))
 	}
 }

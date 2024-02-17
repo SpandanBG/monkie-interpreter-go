@@ -32,7 +32,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
 	program.Statements = []ast.Statement{}
 
-	for p.curToken.Type != token.EOF {
+	for !p.curTokenIs(token.EOF) {
 		if stmt := p.parseStatement(); stmt != nil {
 			program.Statements = append(program.Statements, stmt)
 		}
@@ -45,7 +45,7 @@ func (p *Parser) ParseProgram() *ast.Program {
 
 // nextToken - updates the curToken and peekToken to their next respective values
 func (p *Parser) nextToken() error {
-	if p.curToken.Type == token.EOF {
+	if p.curTokenIs(token.EOF) {
 		return errors.New("Attempted to read next token at end of file")
 	}
 
@@ -55,7 +55,7 @@ func (p *Parser) nextToken() error {
 }
 
 func (p *Parser) expectNextToken(expectedType token.TokenType) error {
-	if p.peekToken.Type != expectedType {
+	if !p.peekTokenIs(expectedType) {
 		return errors.New(
 			fmt.Sprintf("Next token expected %+v. Got %+v.", expectedType, p.peekToken.Type),
 		)
@@ -95,7 +95,7 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 
 	// TODO: We skipping the expression till we find the semicolon
 
-	for p.curToken.Type != token.SEMICOLON {
+	for !p.curTokenIs(token.SEMICOLON) {
 		if err := p.nextToken(); err != nil {
 			fmt.Printf("Error looking for semicolon at end of let statement: %s\n", err.Error())
 			return nil
@@ -103,4 +103,14 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	}
 
 	return stmt
+}
+
+// curTokenIs - Returns true if the curTokken in the parser matches the expected
+func (p *Parser) curTokenIs(expected token.TokenType) bool {
+	return p.curToken.Type == expected
+}
+
+// peekTokenIs - Returns true if the peekToken in the parser matches the expected
+func (p *Parser) peekTokenIs(expected token.TokenType) bool {
+	return p.peekToken.Type == expected
 }
