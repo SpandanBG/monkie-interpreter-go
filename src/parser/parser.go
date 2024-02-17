@@ -14,6 +14,7 @@ type Parser struct {
 	l         *lexer.Lexer_V2
 	curToken  token.Token // Points to the currently pointing token
 	peekToken token.Token // Points to the next token
+	errs      []error     // List of errors that occured while parsing
 }
 
 // New - Create a new parser with the lexer v2 and sets the curToken and the
@@ -43,10 +44,17 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return program
 }
 
+// Errors - Returns the list of errors that was found by the parser
+func (p *Parser) Errors() []error {
+	return p.errs
+}
+
 // nextToken - updates the curToken and peekToken to their next respective values
 func (p *Parser) nextToken() error {
 	if p.curTokenIs(token.EOF) {
-		return errors.New("Attempted to read next token at end of file")
+		err := errors.New("Attempted to read next token at end of file")
+		p.errs = append(p.errs, err)
+		return err
 	}
 
 	p.curToken = p.peekToken
@@ -56,9 +64,11 @@ func (p *Parser) nextToken() error {
 
 func (p *Parser) expectNextToken(expectedType token.TokenType) error {
 	if !p.peekTokenIs(expectedType) {
-		return errors.New(
+		err := errors.New(
 			fmt.Sprintf("Next token expected %+v. Got %+v.", expectedType, p.peekToken.Type),
 		)
+		p.errs = append(p.errs, err)
+		return err
 	}
 	p.nextToken()
 	return nil

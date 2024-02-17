@@ -22,14 +22,28 @@ func notEq[T comparable](t *testing.T, expected T, actual T, msg ...string) {
 }
 
 func testLetStatement(t *testing.T, stmt ast.Statement, expectedName string) bool {
-		eq(t, "let", stmt.TokenLiteral(), "Got non let statement")
+	eq(t, "let", stmt.TokenLiteral(), "Got non let statement")
 
-		letStmt, ok := stmt.(*ast.LetStatement)
+	letStmt, ok := stmt.(*ast.LetStatement)
 
-		eq(t, true, ok, "Failed to typecast statement to let statement")
-		eq(t, expectedName, letStmt.Name.Value, "Identifier name didn't match")
-		eq(t, expectedName, letStmt.Name.TokenLiteral(), "Token literal of identifier didn't match the identifier name")
-    return true
+	eq(t, true, ok, "Failed to typecast statement to let statement")
+	eq(t, expectedName, letStmt.Name.Value, "Identifier name didn't match")
+	eq(t, expectedName, letStmt.Name.TokenLiteral(), "Token literal of identifier didn't match the identifier name")
+	return true
+}
+
+func checkParserErrs(t *testing.T, p *Parser) bool {
+	errs := p.Errors()
+	if len(errs) == 0 {
+		return true
+	}
+
+	t.Errorf("parser found %d errors:", len(errs))
+	for _, err := range errs {
+		t.Errorf("parser err: %q", err.Error())
+	}
+
+	return false
 }
 
 func Test_LetStatements(t *testing.T) {
@@ -42,6 +56,7 @@ func Test_LetStatements(t *testing.T) {
 
 	program := p.ParseProgram()
 
+	eq(t, true, checkParserErrs(t, p))
 	notEq(t, nil, program, "ParseProgram() returned nil")
 	eq(t, 3, len(program.Statements), "program.Statements does not contain 3 statements")
 
@@ -50,6 +65,6 @@ func Test_LetStatements(t *testing.T) {
 		stmt := program.Statements[i]
 
 		notEq(t, nil, stmt, "Got null statement at", strconv.Itoa(i))
-    eq(t, true, testLetStatement(t, stmt, expectedIdentifier))
+		eq(t, true, testLetStatement(t, stmt, expectedIdentifier))
 	}
 }
