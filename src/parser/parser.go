@@ -74,6 +74,16 @@ func (p *Parser) expectNextToken(expectedType token.TokenType) error {
 	return nil
 }
 
+// curTokenIs - Returns true if the curTokken in the parser matches the expected
+func (p *Parser) curTokenIs(expected token.TokenType) bool {
+	return p.curToken.Type == expected
+}
+
+// peekTokenIs - Returns true if the peekToken in the parser matches the expected
+func (p *Parser) peekTokenIs(expected token.TokenType) bool {
+	return p.peekToken.Type == expected
+}
+
 // parseStatement - checks the list of statement tokens parses accordingly
 func (p *Parser) parseStatement() ast.Statement {
 	switch p.curToken.Type {
@@ -83,6 +93,26 @@ func (p *Parser) parseStatement() ast.Statement {
 		// cause it will have the type.
 		if letStmt := p.parseLetStatement(); letStmt != nil {
 			return letStmt
+		}
+		return nil
+	case token.RETURN:
+		if returnStmt := p.parseReturnStatement(); returnStmt != nil {
+			return returnStmt
+		}
+		return nil
+	}
+
+	return nil
+}
+
+// parseExpression - parse an expression
+func (p *Parser) parseExpression() ast.Expression {
+	// TODO: We skipping the expression till we find the semicolon
+
+	for !p.curTokenIs(token.SEMICOLON) {
+		if err := p.nextToken(); err != nil {
+			fmt.Printf("Error looking for semicolon at end of let statement: %s\n", err.Error())
+			return nil
 		}
 	}
 
@@ -103,24 +133,14 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	// TODO: We skipping the expression till we find the semicolon
-
-	for !p.curTokenIs(token.SEMICOLON) {
-		if err := p.nextToken(); err != nil {
-			fmt.Printf("Error looking for semicolon at end of let statement: %s\n", err.Error())
-			return nil
-		}
-	}
-
+	stmt.Value = p.parseExpression()
 	return stmt
 }
 
-// curTokenIs - Returns true if the curTokken in the parser matches the expected
-func (p *Parser) curTokenIs(expected token.TokenType) bool {
-	return p.curToken.Type == expected
-}
-
-// peekTokenIs - Returns true if the peekToken in the parser matches the expected
-func (p *Parser) peekTokenIs(expected token.TokenType) bool {
-	return p.peekToken.Type == expected
+// parseReturnStatement - parse a return statement
+func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
+	stmt := &ast.ReturnStatement{Token: p.curToken}
+	p.nextToken()
+	stmt.ReturnValue = p.parseExpression()
+	return stmt
 }

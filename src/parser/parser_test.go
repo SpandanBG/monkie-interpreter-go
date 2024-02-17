@@ -68,3 +68,26 @@ func Test_LetStatements(t *testing.T) {
 		eq(t, true, testLetStatement(t, stmt, expectedIdentifier))
 	}
 }
+
+func Test_ReturnStatement(t *testing.T) {
+	input := `return 5;
+  return 10;
+
+  return add(5 ,10);`
+
+	l := lexer.New_V2(strings.NewReader(input))
+	p := New(l)
+
+	program := p.ParseProgram()
+
+	eq(t, true, checkParserErrs(t, p))
+	notEq(t, nil, program, "ParseProgram() returned nil")
+	eq(t, 3, len(program.Statements), "program.Statement does not contain 3 statements")
+
+	for _, stmt := range program.Statements {
+		returnStmt, ok := stmt.(*ast.ReturnStatement)
+
+		eq(t, true, ok, "Failed to typecast statement to let statement")
+		eq(t, "return", returnStmt.TokenLiteral(), "Token literal of return didn't match")
+	}
+}
