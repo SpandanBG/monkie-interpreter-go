@@ -9,18 +9,50 @@ import (
 	"sudocoding.xyz/interpreter_in_go/src/token"
 )
 
+// Operator precedence
+type OpPrec int
+
+const (
+	_ OpPrec = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > or <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -X or !x
+	CALL        // function call
+)
+
+type (
+	// prefixParserFn - function signature for parsing expressions of tokens with
+	// prefix
+	prefixParserFn func() ast.Expression
+
+	// infixParserFn - function signature for parsing expressions of tokens with
+	// infix. Takes the left expression as the arugment to the function
+	infixParserFn func(leftExp ast.Expression) ast.Expression
+)
+
 // Parser - The parser of Monkie lang
 type Parser struct {
-	l         *lexer.Lexer_V2
-	curToken  token.Token // Points to the currently pointing token
-	peekToken token.Token // Points to the next token
-	errs      []error     // List of errors that occured while parsing
+	l             *lexer.Lexer_V2
+	curToken      token.Token                        // Points to the currently pointing token
+	peekToken     token.Token                        // Points to the next token
+	errs          []error                            // List of errors that occured while parsing
+	prefixParsers map[token.TokenType]prefixParserFn // map of prefix token parsers
+	infixParsers  map[token.TokenType]infixParserFn  // map of infin token parsers
 }
 
 // New - Create a new parser with the lexer v2 and sets the curToken and the
 // peekToken to the start of the program
 func New(l *lexer.Lexer_V2) *Parser {
-	p := &Parser{l: l}
+	p := &Parser{
+		l:             l,
+		prefixParsers: make(map[token.TokenType]prefixParserFn),
+		infixParsers:  make(map[token.TokenType]infixParserFn),
+	}
+
+	p.registerPrefixParser(token.IDENT, p.parseIdentifier)
 
 	p.nextToken()
 	p.nextToken()
@@ -47,6 +79,16 @@ func (p *Parser) ParseProgram() *ast.Program {
 // Errors - Returns the list of errors that was found by the parser
 func (p *Parser) Errors() []error {
 	return p.errs
+}
+
+// registerPrefixParser - registers prefix token parsers
+func (p *Parser) registerPrefixParser(tokenType token.TokenType, fn prefixParserFn) {
+	p.prefixParsers[tokenType] = fn
+}
+
+// registerInfixParser - registers infix token parsers
+func (p *Parser) registerInfixParser(tokenType token.TokenType, fn infixParserFn) {
+	p.infixParsers[tokenType] = fn
 }
 
 // nextToken - updates the curToken and peekToken to their next respective values
@@ -100,23 +142,13 @@ func (p *Parser) parseStatement() ast.Statement {
 			return returnStmt
 		}
 		return nil
-	}
-
-	return nil
-}
-
-// parseExpression - parse an expression
-func (p *Parser) parseExpression() ast.Expression {
-	// TODO: We skipping the expression till we find the semicolon
-
-	for !p.curTokenIs(token.SEMICOLON) {
-		if err := p.nextToken(); err != nil {
-			fmt.Printf("Error looking for semicolon at end of let statement: %s\n", err.Error())
-			return nil
+	default:
+		if expStmt := p.parseExpressionStatement(); expStmt != nil {
+			return expStmt
 		}
+		return nil
 	}
 
-	return nil
 }
 
 // parseLetStatement - parses a let statement
@@ -133,7 +165,15 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	stmt.Value = p.parseExpression()
+	// TODO: We skipping the expression till we find the semicolon
+
+	for !p.curTokenIs(token.SEMICOLON) {
+		if err := p.nextToken(); err != nil {
+			fmt.Printf("Error looking for semicolon at end of let statement: %s\n", err.Error())
+			return nil
+		}
+	}
+
 	return stmt
 }
 
@@ -141,6 +181,38 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 	p.nextToken()
-	stmt.ReturnValue = p.parseExpression()
+
+	// TODO: We skipping the expression till we find the semicolon
+
+	for !p.curTokenIs(token.SEMICOLON) {
+		if err := p.nextToken(); err != nil {
+			fmt.Printf("Error looking for semicolon at end of let statement: %s\n", err.Error())
+			return nil
+		}
+	}
+
 	return stmt
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curToken}
+	stmt.Expression = p.parseExpression(LOWEST)
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+	return stmt
+}
+
+// parseExpression - parse an expression
+func (p *Parser) parseExpression(opPrec OpPrec) ast.Expression {
+	if prefix := p.prefixParsers[p.curToken.Type]; prefix != nil {
+		return prefix()
+	}
+
+	return nil
+}
+
+// parseIdentifier - parse an identifer expression
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
 }
