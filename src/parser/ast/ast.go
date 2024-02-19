@@ -1,5 +1,7 @@
 package ast
 
+import "bytes"
+
 /*
  Top Down Operator Precedence (Pratt Parser)
 
@@ -13,6 +15,7 @@ package ast
 // token. This will be used for debugging and testing purpose.
 type Node interface {
 	TokenLiteral() string
+	String() string
 }
 
 // Statement - The nodes in the AST that are statements are to implement this.
@@ -46,4 +49,14 @@ func (p *Program) TokenLiteral() string {
 		return p.Statements[0].TokenLiteral()
 	}
 	return ""
+}
+
+// String - Iterates through every statement in the program and returns their
+// respective String in sequence
+func (p *Program) String() string {
+	var out bytes.Buffer
+	for _, stmt := range p.Statements {
+		out.WriteString(stmt.String())
+	}
+	return out.String()
 }
