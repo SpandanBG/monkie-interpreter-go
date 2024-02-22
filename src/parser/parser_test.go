@@ -154,7 +154,7 @@ func Test_PrefixExpression(t *testing.T) {
 		},
 		{
 			name:         "test for - prefix expression",
-			input:        "-5",
+			input:        "-5;",
 			operator:     "-",
 			integerValue: 5,
 		},
@@ -175,6 +175,136 @@ func Test_PrefixExpression(t *testing.T) {
 			eq(t, true, ok, "Failed while typecasting stmt to PrefixExpression")
 			eq(t, test.operator, exp.Operator, "Expression operator is not as expected")
 			eq(t, true, testIntegerLiteral(t, exp.Right, test.integerValue), "Interger Literal test failed")
+		})
+	}
+}
+
+func Test_InfixOperators(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		input    string
+		left     int64
+		operator string
+		right    int64
+	}{
+		{
+			name:     "test sum operator",
+			input:    "5 + 5;",
+			left:     5,
+			operator: "+",
+			right:    5,
+		},
+		{
+			name:     "test minus operator",
+			input:    "5 - 5;",
+			left:     5,
+			operator: "-",
+			right:    5,
+		},
+		{
+			name:     "test product operator",
+			input:    "5 * 5;",
+			left:     5,
+			operator: "*",
+			right:    5,
+		},
+		{
+			name:     "test divide operator",
+			input:    "5 / 5;",
+			left:     5,
+			operator: "/",
+			right:    5,
+		},
+		{
+			name:     "test greater operator",
+			input:    "5 > 5;",
+			left:     5,
+			operator: ">",
+			right:    5,
+		},
+		{
+			name:     "test lesser operator",
+			input:    "5 < 5;",
+			left:     5,
+			operator: "<",
+			right:    5,
+		},
+		{
+			name:     "test greater than operator",
+			input:    "5 >= 5;",
+			left:     5,
+			operator: ">=",
+			right:    5,
+		},
+		{
+			name:     "test lesser than operator",
+			input:    "5 <= 5;",
+			left:     5,
+			operator: "<=",
+			right:    5,
+		},
+		{
+			name:     "test equal operator",
+			input:    "5 == 5;",
+			left:     5,
+			operator: "==",
+			right:    5,
+		},
+		{
+			name:     "test not equal operator",
+			input:    "5 != 5;",
+			left:     5,
+			operator: "!=",
+			right:    5,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			l := lexer.New_V2(strings.NewReader(test.input))
+			p := New(l)
+			program := p.ParseProgram()
+
+			checkParserErrs(t, p)
+
+			eq(t, 1, len(program.Statements), "Expected 1 program statement")
+
+			stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+			eq(t, true, ok, "Failed to typecase program.Statement[0] to *ast.ExpressionStatement")
+
+			exp, ok := stmt.Expression.(*ast.InfixExpression)
+			eq(t, true, ok, "Failed to typecase exp.Expression to *ast.InfixExpression")
+
+			eq(t, true, testIntegerLiteral(t, exp.Left, test.left), "Mismatched expected left")
+			eq(t, test.operator, exp.Operator, "Didn't get expected infix operator")
+			eq(t, true, testIntegerLiteral(t, exp.Right, test.right), "Mismatched expected right")
+		})
+	}
+}
+
+func Test_OperatorPrecedenceParsing(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected string
+	}{
+		{"-a * b", "((-a) * b)"},
+		{"!-a", "(!(-a))"},
+		{"a + b + c", "((a + b) + c)"},
+		{"a + b - c", "((a + b) - c)"},
+		{"a * b * c", "((a * b) * c)"},
+		{"a * b / c", "(a * (b / c))"},
+		{"a + b / c", "(a + (b / c))"},
+		{"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
+		{"3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"},
+		{"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
+		{"5 <= 4 != 3 >= 4", "((5 <= 4) != (3 >= 4))"},
+		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+	} {
+		t.Run(fmt.Sprintf("Test %s to give %s", test.input, test.expected), func(t *testing.T) {
+			l := lexer.New_V2(strings.NewReader(test.input))
+			p := New(l)
+			program := p.ParseProgram()
+
+			checkParserErrs(t, p)
+			eq(t, test.expected, program.String(), "Failed to match expected string")
 		})
 	}
 }
