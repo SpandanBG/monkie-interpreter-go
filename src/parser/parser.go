@@ -55,6 +55,8 @@ func New(l *lexer.Lexer_V2) *Parser {
 
 	p.registerPrefixParser(token.IDENT, p.parseIdentifier)
 	p.registerPrefixParser(token.INT, p.parseIntegerLiteral)
+	p.registerPrefixParser(token.BANG, p.parsePrefixExpression)
+	p.registerPrefixParser(token.MINUS, p.parsePrefixExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -106,6 +108,8 @@ func (p *Parser) nextToken() error {
 	return nil
 }
 
+// expectNextToken - tries to move to the next token if matches the expected
+// token. otherwise returns an error
 func (p *Parser) expectNextToken(expectedType token.TokenType) error {
 	if !p.peekTokenIs(expectedType) {
 		err := errors.New(
@@ -196,9 +200,13 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	return stmt
 }
 
+// parseExpressionStatement - parse an expression statement
 func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 	stmt.Expression = p.parseExpression(LOWEST)
+
+	// This is to check if the next token is ; since ; will be optional for
+	// expression statements
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
@@ -207,11 +215,18 @@ func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
 
 // parseExpression - parse an expression
 func (p *Parser) parseExpression(opPrec OpPrec) ast.Expression {
-	if prefix := p.prefixParsers[p.curToken.Type]; prefix != nil {
-		return prefix()
+	prefix := p.prefixParsers[p.curToken.Type]
+
+	if prefix == nil {
+		err := errors.New(
+			fmt.Sprintf("No prefix parser function for %s found", string(p.curToken.Type)),
+		)
+		fmt.Println(err.Error())
+		p.errs = append(p.errs, err)
+		return nil
 	}
 
-	return nil
+	return prefix()
 }
 
 // parseIdentifier - parse an identifer expression
@@ -232,4 +247,19 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	}
 
 	return &ast.IntegerLiteral{Token: p.curToken, Value: intVal}
+}
+
+func (p *Parser) parsePrefixExpression() ast.Expression {
+	expression := &ast.PrefixExpression{
+		Token:    p.curToken,
+		Operator: p.curToken.Literal,
+	}
+
+	if err := p.nextToken(); err != nil {
+		fmt.Println("Error occured while parsing next token of prefix expression: ", err.Error())
+		return nil
+	}
+
+	expression.Right = p.parseExpression(PREFIX)
+	return expression
 }

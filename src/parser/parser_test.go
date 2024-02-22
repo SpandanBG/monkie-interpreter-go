@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"testing"
@@ -29,6 +30,14 @@ func testLetStatement(t *testing.T, stmt ast.Statement, expectedName string) boo
 	eq(t, true, ok, "Failed to typecast statement to let statement")
 	eq(t, expectedName, letStmt.Name.Value, "Identifier name didn't match")
 	eq(t, expectedName, letStmt.Name.TokenLiteral(), "Token literal of identifier didn't match the identifier name")
+	return true
+}
+
+func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
+	integ, ok := il.(*ast.IntegerLiteral)
+	eq(t, ok, true, "Failed to typecase il to *ast.IntegerLiteral")
+	eq(t, value, integ.Value, "integ.Value doesn't match expected")
+	eq(t, fmt.Sprintf("%d", value), integ.TokenLiteral(), "integ.TokenLiteral() doesn't match expected")
 	return true
 }
 
@@ -128,4 +137,44 @@ func Test_IntegerLiteralExpression(t *testing.T) {
 
 	eq(t, 5, ident.Value, "Identifier value mis-match")
 	eq(t, "5", ident.TokenLiteral(), "Identifier token literal mis-match")
+}
+
+func Test_PrefixExpression(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		input        string
+		operator     string
+		integerValue int64
+	}{
+		{
+			name:         "test for ! prefix expression",
+			input:        "!5",
+			operator:     "!",
+			integerValue: 5,
+		},
+		{
+			name:         "test for - prefix expression",
+			input:        "-5",
+			operator:     "-",
+			integerValue: 5,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			l := lexer.New_V2(strings.NewReader(test.input))
+			p := New(l)
+			program := p.ParseProgram()
+
+			checkParserErrs(t, p)
+
+			eq(t, 1, len(program.Statements), "Expecting 1 statements")
+
+			stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+			eq(t, true, ok, "Failed while typecasting program.Statement[0] to Expression Statement")
+
+			exp, ok := stmt.Expression.(*ast.PrefixExpression)
+			eq(t, true, ok, "Failed while typecasting stmt to PrefixExpression")
+			eq(t, test.operator, exp.Operator, "Expression operator is not as expected")
+			eq(t, true, testIntegerLiteral(t, exp.Right, test.integerValue), "Interger Literal test failed")
+		})
+	}
 }
