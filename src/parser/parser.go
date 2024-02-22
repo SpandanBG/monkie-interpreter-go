@@ -3,6 +3,7 @@ package parser
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"sudocoding.xyz/interpreter_in_go/src/lexer"
 	"sudocoding.xyz/interpreter_in_go/src/parser/ast"
@@ -53,6 +54,7 @@ func New(l *lexer.Lexer_V2) *Parser {
 	}
 
 	p.registerPrefixParser(token.IDENT, p.parseIdentifier)
+	p.registerPrefixParser(token.INT, p.parseIntegerLiteral)
 
 	p.nextToken()
 	p.nextToken()
@@ -215,4 +217,19 @@ func (p *Parser) parseExpression(opPrec OpPrec) ast.Expression {
 // parseIdentifier - parse an identifer expression
 func (p *Parser) parseIdentifier() ast.Expression {
 	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+// parseIntegerLiteral - parse an integer literal expression
+func (p *Parser) parseIntegerLiteral() ast.Expression {
+	intVal, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
+	if err != nil {
+		pErr := errors.New(fmt.Sprintf("Error occured while parsing int literal %q with error %q", p.curToken.Literal, err.Error()))
+
+		fmt.Println(pErr.Error())
+
+		p.errs = append(p.errs, pErr)
+		return nil
+	}
+
+	return &ast.IntegerLiteral{Token: p.curToken, Value: intVal}
 }

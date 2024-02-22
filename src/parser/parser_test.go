@@ -93,7 +93,7 @@ func Test_ReturnStatement(t *testing.T) {
 }
 
 func Test_IdentifierExpression(t *testing.T) {
-	l := lexer.New_V2(strings.NewReader(`foobar`))
+	l := lexer.New_V2(strings.NewReader(`foobar;`))
 	p := New(l)
 	program := p.ParseProgram()
 
@@ -109,4 +109,23 @@ func Test_IdentifierExpression(t *testing.T) {
 
 	eq(t, "foobar", ident.Value, "Identifier value mis-match")
 	eq(t, "foobar", ident.TokenLiteral(), "Identifier token literal mis-match")
+}
+
+func Test_IntegerLiteralExpression(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader(`5;`))
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkParserErrs(t, p)
+
+	eq(t, 1, len(program.Statements), "Expected 1 statement in the program")
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed at typecasting program.Statement[0] to *ast.ExpressionStatement")
+
+	ident, ok := stmt.Expression.(*ast.IntegerLiteral)
+	eq(t, true, ok, "Failed at typecasting stmt.Epxression to *ast.IntegerLiteral")
+
+	eq(t, 5, ident.Value, "Identifier value mis-match")
+	eq(t, "5", ident.TokenLiteral(), "Identifier token literal mis-match")
 }
