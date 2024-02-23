@@ -73,6 +73,7 @@ func New(l *lexer.Lexer_V2) *Parser {
 	p.registerPrefixParser(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefixParser(token.TRUE, p.parseBoolean)
 	p.registerPrefixParser(token.FALSE, p.parseBoolean)
+	p.registerPrefixParser(token.LPAREN, p.parseGroupedExpression)
 
 	p.registerInfixParser(token.PLUS, p.parseInfixExpression)
 	p.registerInfixParser(token.MINUS, p.parseInfixExpression)
@@ -335,9 +336,22 @@ func (p *Parser) parseInfixExpression(leftExp ast.Expression) ast.Expression {
 	return expression
 }
 
+// parseBoolean - parse a boolean
 func (p *Parser) parseBoolean() ast.Expression {
 	return &ast.Boolean{
 		Token: p.curToken,
 		Value: p.curTokenIs(token.TRUE),
 	}
+}
+
+// parseGroupedExpression - parses a grouped (anything within LPAREN and RPAREN)
+// expression
+func (p *Parser) parseGroupedExpression() ast.Expression {
+	p.nextToken()
+	exp := p.parseExpression(LOWEST)
+	if err := p.expectNextToken(token.RPAREN); err != nil {
+		fmt.Println("Error occured while parsing grouped expression: ", err.Error())
+		return nil
+	}
+	return exp
 }
