@@ -388,3 +388,58 @@ func Test_Boolean(t *testing.T) {
 		})
 	}
 }
+
+func Test_IfExpression(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader("if (x < y) { x }"))
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkParserErrs(t, p)
+
+	eq(t, 1, len(program.Statements), "Expected 1 if statement in program")
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecase program.Statements[0] to *ast.ExpressionStatement")
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	eq(t, true, ok, "Failed to typecase stmt.Expression to *ast.IfExpression")
+	eq(t, true, testInfixExpression(t, exp.Condition, "x", "<", "y"))
+	notEq(t, nil, exp.Consequence, "Got nil consequence")
+	eq(t, 1, len(exp.Consequence.Statements), "Expected 1 statement in consequence")
+
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecase exp.Consequence.Statements[0] to *ast.ExpressionStatement")
+	eq(t, true, testIdentifier(t, consequence.Expression, "x"))
+
+	eq(t, nil, exp.Alternative, "Got non nil alternative")
+}
+
+func Test_IfElseExpression(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader("if (x < y) { x } else { y }"))
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkParserErrs(t, p)
+
+	eq(t, 1, len(program.Statements), "Expected 1 if statement in program")
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecase program.Statements[0] to *ast.ExpressionStatement")
+
+	exp, ok := stmt.Expression.(*ast.IfExpression)
+	eq(t, true, ok, "Failed to typecase stmt.Expression to *ast.IfExpression")
+	eq(t, true, testInfixExpression(t, exp.Condition, "x", "<", "y"))
+	notEq(t, nil, exp.Consequence, "Got nil consequence")
+	eq(t, 1, len(exp.Consequence.Statements), "Expected 1 statement in consequence")
+
+	consequence, ok := exp.Consequence.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecase exp.Consequence.Statements[0] to *ast.ExpressionStatement")
+	eq(t, true, testIdentifier(t, consequence.Expression, "x"))
+
+	notEq(t, nil, exp.Alternative, "Got nil alternative")
+	eq(t, 1, len(exp.Alternative.Statements), "Expected 1 statement in alternative")
+
+	alternative, ok := exp.Alternative.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecase exp.Alternative.Statements[0] to *ast.ExpressionStatement")
+	eq(t, true, testIdentifier(t, alternative.Expression, "y"))
+}

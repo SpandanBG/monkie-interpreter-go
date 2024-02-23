@@ -74,6 +74,7 @@ func New(l *lexer.Lexer_V2) *Parser {
 	p.registerPrefixParser(token.TRUE, p.parseBoolean)
 	p.registerPrefixParser(token.FALSE, p.parseBoolean)
 	p.registerPrefixParser(token.LPAREN, p.parseGroupedExpression)
+	p.registerPrefixParser(token.IF, p.parseIfExpression)
 
 	p.registerInfixParser(token.PLUS, p.parseInfixExpression)
 	p.registerInfixParser(token.MINUS, p.parseInfixExpression)
@@ -354,4 +355,59 @@ func (p *Parser) parseGroupedExpression() ast.Expression {
 		return nil
 	}
 	return exp
+}
+
+// parseIfExpression - parse an if expression
+func (p *Parser) parseIfExpression() ast.Expression {
+	exp := &ast.IfExpression{Token: p.curToken}
+
+	if err := p.expectNextToken(token.LPAREN); err != nil {
+		fmt.Println("Expected missing ( in if condition: ", err.Error())
+		return nil
+	}
+
+	p.nextToken()
+	exp.Condition = p.parseExpression(LOWEST)
+
+	if err := p.expectNextToken(token.RPAREN); err != nil {
+		fmt.Println("Expected missing ) in if condition: ", err.Error())
+		return nil
+	}
+
+	if err := p.expectNextToken(token.LBRACE); err != nil {
+		fmt.Println("Expected missing { in if body: ", err.Error())
+		return nil
+	}
+
+	exp.Consequence = p.parseBlockStatement()
+
+	if p.peekTokenIs(token.ELSE) {
+		p.nextToken()
+
+		if err := p.expectNextToken(token.LBRACE); err != nil {
+			fmt.Println("Expected missing { in else body: ", err.Error())
+			return nil
+		}
+
+		exp.Alternative = p.parseBlockStatement()
+	}
+
+	return exp
+}
+
+// parseBlockStatement - parses statements withing curly braces
+func (p *Parser) parseBlockStatement() *ast.BlockStatement {
+	block := &ast.BlockStatement{Token: p.curToken}
+	block.Statements = []ast.Statement{}
+
+	p.nextToken()
+
+	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
+		if stmt := p.parseStatement(); stmt != nil {
+			block.Statements = append(block.Statements, stmt)
+		}
+		p.nextToken()
+	}
+
+	return block
 }
