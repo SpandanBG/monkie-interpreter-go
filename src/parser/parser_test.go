@@ -35,9 +35,39 @@ func testLetStatement(t *testing.T, stmt ast.Statement, expectedName string) boo
 
 func testIntegerLiteral(t *testing.T, il ast.Expression, value int64) bool {
 	integ, ok := il.(*ast.IntegerLiteral)
-	eq(t, ok, true, "Failed to typecase il to *ast.IntegerLiteral")
+	eq(t, ok, true, "Failed to typecast il to *ast.IntegerLiteral")
 	eq(t, value, integ.Value, "integ.Value doesn't match expected")
 	eq(t, fmt.Sprintf("%d", value), integ.TokenLiteral(), "integ.TokenLiteral() doesn't match expected")
+	return true
+}
+
+func testIdentifier(t *testing.T, exp ast.Expression, value string) bool {
+	ident, ok := exp.(*ast.Identifier)
+	eq(t, ok, true, "Failed to typecast exp to *ast.Identifier")
+	eq(t, value, ident.Value, "ident.Value doesn't match expected")
+	eq(t, value, ident.TokenLiteral(), "ident.TokenLiteral() doesn't match expected")
+	return true
+}
+
+func testLiteralExpression(t *testing.T, exp ast.Expression, expected interface{}) bool {
+	switch v := expected.(type) {
+	case int:
+		return testIntegerLiteral(t, exp, int64(v))
+	case int64:
+		return testIntegerLiteral(t, exp, int64(v))
+	case string:
+		return testIdentifier(t, exp, string(v))
+	}
+	t.Errorf("type of exp not handled. got=%T", exp)
+	return false
+}
+
+func testInfixExpression(t *testing.T, exp ast.Expression, left interface{}, operator string, right interface{}) bool {
+	opExp, ok := exp.(*ast.InfixExpression)
+	eq(t, ok, true, "Failed to typecast exp to *ast.InfixExpression")
+	eq(t, true, testLiteralExpression(t, opExp.Left, left))
+	eq(t, operator, opExp.Operator, "Operator doesn't match expected")
+	eq(t, true, testLiteralExpression(t, opExp.Right, right))
 	return true
 }
 
@@ -271,11 +301,7 @@ func Test_InfixOperators(t *testing.T) {
 			eq(t, true, ok, "Failed to typecase program.Statement[0] to *ast.ExpressionStatement")
 
 			exp, ok := stmt.Expression.(*ast.InfixExpression)
-			eq(t, true, ok, "Failed to typecase exp.Expression to *ast.InfixExpression")
-
-			eq(t, true, testIntegerLiteral(t, exp.Left, test.left), "Mismatched expected left")
-			eq(t, test.operator, exp.Operator, "Didn't get expected infix operator")
-			eq(t, true, testIntegerLiteral(t, exp.Right, test.right), "Mismatched expected right")
+			eq(t, true, testInfixExpression(t, exp, test.left, test.operator, test.right))
 		})
 	}
 }
