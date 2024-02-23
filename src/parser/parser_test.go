@@ -49,8 +49,18 @@ func testIdentifier(t *testing.T, exp ast.Expression, value string) bool {
 	return true
 }
 
+func testBoolean(t *testing.T, exp ast.Expression, value bool) bool {
+	boolean, ok := exp.(*ast.Boolean)
+	eq(t, ok, true, "Failed to typecast exp to *ast.Identifier")
+	eq(t, value, boolean.Value, "ident.Value doesn't match expected")
+	eq(t, fmt.Sprintf("%v", value), boolean.TokenLiteral(), "ident.TokenLiteral() doesn't match expected")
+	return true
+}
+
 func testLiteralExpression(t *testing.T, exp ast.Expression, expected interface{}) bool {
 	switch v := expected.(type) {
+	case bool:
+		return testBoolean(t, exp, bool(v))
 	case int:
 		return testIntegerLiteral(t, exp, int64(v))
 	case int64:
@@ -331,6 +341,29 @@ func Test_OperatorPrecedenceParsing(t *testing.T) {
 
 			checkParserErrs(t, p)
 			eq(t, test.expected, program.String(), "Failed to match expected string")
+		})
+	}
+}
+
+func Test_Boolean(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected bool
+	}{
+		{"true;", true},
+		{"false", false},
+	} {
+		t.Run(fmt.Sprintf("test for %s boolean", test.input), func(t *testing.T) {
+			l := lexer.New_V2(strings.NewReader(test.input))
+			p := New(l)
+			program := p.ParseProgram()
+
+			checkParserErrs(t, p)
+			eq(t, 1, len(program.Statements), "Expected 1 statement in the program")
+
+			stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+			eq(t, true, ok, "Failed at typecasting program.Statement[0] to *ast.ExpressionStatement")
+			eq(t, true, testBoolean(t, stmt.Expression, test.expected))
 		})
 	}
 }
