@@ -53,7 +53,7 @@ func testBoolean(t *testing.T, exp ast.Expression, value bool) bool {
 	boolean, ok := exp.(*ast.Boolean)
 	eq(t, ok, true, "Failed to typecast exp to *ast.Identifier")
 	eq(t, value, boolean.Value, "ident.Value doesn't match expected")
-	eq(t, fmt.Sprintf("%v", value), boolean.TokenLiteral(), "ident.TokenLiteral() doesn't match expected")
+	eq(t, fmt.Sprintf("%t", value), boolean.TokenLiteral(), "ident.TokenLiteral() doesn't match expected")
 	return true
 }
 
