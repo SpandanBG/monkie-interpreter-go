@@ -181,22 +181,34 @@ func Test_IntegerLiteralExpression(t *testing.T) {
 
 func Test_PrefixExpression(t *testing.T) {
 	for _, test := range []struct {
-		name         string
-		input        string
-		operator     string
-		integerValue int64
+		name     string
+		input    string
+		operator string
+		value    interface{}
 	}{
 		{
-			name:         "test for ! prefix expression",
-			input:        "!5",
-			operator:     "!",
-			integerValue: 5,
+			name:     "test for ! prefix expression",
+			input:    "!5",
+			operator: "!",
+			value:    5,
 		},
 		{
-			name:         "test for - prefix expression",
-			input:        "-5;",
-			operator:     "-",
-			integerValue: 5,
+			name:     "test for - prefix expression",
+			input:    "-5;",
+			operator: "-",
+			value:    5,
+		},
+		{
+			name:     "test for ! prefix expression for true",
+			input:    "!true;",
+			operator: "!",
+			value:    true,
+		},
+		{
+			name:     "test for ! prefix expression for false",
+			input:    "!false;",
+			operator: "!",
+			value:    false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -214,7 +226,7 @@ func Test_PrefixExpression(t *testing.T) {
 			exp, ok := stmt.Expression.(*ast.PrefixExpression)
 			eq(t, true, ok, "Failed while typecasting stmt to PrefixExpression")
 			eq(t, test.operator, exp.Operator, "Expression operator is not as expected")
-			eq(t, true, testIntegerLiteral(t, exp.Right, test.integerValue), "Interger Literal test failed")
+			eq(t, true, testLiteralExpression(t, exp.Right, test.value), "Literal test failed")
 		})
 	}
 }
