@@ -443,3 +443,57 @@ func Test_IfElseExpression(t *testing.T) {
 	eq(t, true, ok, "Failed to typecase exp.Alternative.Statements[0] to *ast.ExpressionStatement")
 	eq(t, true, testIdentifier(t, alternative.Expression, "y"))
 }
+
+func Test_FunctionLiteralParsing(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader("fn(x, y) { x + y }"))
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkParserErrs(t, p)
+	eq(t, 1, len(program.Statements), "Expected 1 program statement")
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecast program.Statements[0] as *ast.ExpressionStatement")
+
+	function, ok := stmt.Expression.(*ast.FunctionLiteral)
+	eq(t, true, ok, "Failed to typecast stmt.Expression as *ast.FunctionLiteral")
+	eq(t, 2, len(function.Parameters), "Expected 2 params")
+	eq(t, true, testLiteralExpression(t, function.Parameters[0], "x"))
+	eq(t, true, testLiteralExpression(t, function.Parameters[1], "y"))
+	eq(t, 1, len(function.Body.Statements), "Expected 1 function body statements")
+
+	bodyStmt, ok := function.Body.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecast function.Body.Statements[0] as *ast.ExpressionStatement")
+	eq(t, true, testInfixExpression(t, bodyStmt.Expression, "x", "+", "y"))
+}
+
+func Test_FunctionParameterParsing(t *testing.T) {
+	for _, test := range []struct {
+		input          string
+		expectedParams []string
+	}{
+		{"fn() {}", []string{}},
+		{"fn(x) {}", []string{"x"}},
+		{"fn(x,y) {}", []string{"x", "y"}},
+	} {
+		t.Run(fmt.Sprintf("Test params for fun : %s", test.input), func(t *testing.T) {
+			l := lexer.New_V2(strings.NewReader(test.input))
+			p := New(l)
+			program := p.ParseProgram()
+
+			checkParserErrs(t, p)
+			eq(t, 1, len(program.Statements), "Expected 1 program statement")
+
+			stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+			eq(t, true, ok, "Failed to typecast program.Statements[0] as *ast.ExpressionStatement")
+
+			function, ok := stmt.Expression.(*ast.FunctionLiteral)
+			eq(t, true, ok, "Failed to typecast stmt.Expression as *ast.FunctionLiteral")
+
+			eq(t, len(test.expectedParams), len(function.Parameters), "Mismatch number of expected params")
+			for i, expectedParam := range test.expectedParams {
+				eq(t, true, testLiteralExpression(t, function.Parameters[i], expectedParam))
+			}
+		})
+	}
+}

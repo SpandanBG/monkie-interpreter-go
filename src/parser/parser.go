@@ -75,6 +75,7 @@ func New(l *lexer.Lexer_V2) *Parser {
 	p.registerPrefixParser(token.FALSE, p.parseBoolean)
 	p.registerPrefixParser(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefixParser(token.IF, p.parseIfExpression)
+	p.registerPrefixParser(token.FUNCTION, p.parseFunctionLiteral)
 
 	p.registerInfixParser(token.PLUS, p.parseInfixExpression)
 	p.registerInfixParser(token.MINUS, p.parseInfixExpression)
@@ -410,4 +411,50 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	}
 
 	return block
+}
+
+// parseFunctionLiteral - parse a function
+func (p *Parser) parseFunctionLiteral() ast.Expression {
+	lit := &ast.FunctionLiteral{Token: p.curToken}
+
+	if err := p.expectNextToken(token.LPAREN); err != nil {
+		fmt.Println("Expected ( for function params is missing: ", err.Error())
+		return nil
+	}
+
+	lit.Parameters = p.parseFunctionParameters()
+
+	if err := p.expectNextToken(token.LBRACE); err != nil {
+		fmt.Println("Expected { for function body is missing: ", err.Error())
+		return nil
+	}
+
+	lit.Body = p.parseBlockStatement()
+	return lit
+}
+
+// parseFunctionParameters - parse function parameters
+func (p *Parser) parseFunctionParameters() []*ast.Identifier {
+	identifiers := []*ast.Identifier{}
+
+	if p.peekTokenIs(token.RPAREN) {
+		p.nextToken()
+		return identifiers
+	}
+
+	p.nextToken()
+	identifiers = append(identifiers, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+
+	for p.peekTokenIs(token.COMMA) {
+		p.nextToken()
+		p.nextToken()
+		identifiers = append(identifiers, &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal})
+	}
+
+	if err := p.expectNextToken(token.RPAREN); err != nil {
+		fmt.Println("Expected ) for function params is missing: ", err.Error())
+		return nil
+	}
+
+	return identifiers
 }
