@@ -3,6 +3,7 @@ package evaluator
 import (
 	"sudocoding.xyz/interpreter_in_go/src/object"
 	"sudocoding.xyz/interpreter_in_go/src/parser/ast"
+	"sudocoding.xyz/interpreter_in_go/src/token"
 )
 
 var (
@@ -26,6 +27,8 @@ func Eval(node ast.Node) object.Object {
 		return nativeBoolToBooleanObj(node.Value)
 	case *ast.PrefixExpression:
 		return evalPrefixExpression(node.Operator, Eval(node.Right))
+	case *ast.InfixExpression:
+		return evalInfixExpression(Eval(node.Left), node.Operator, Eval(node.Right))
 	}
 
 	return NULL
@@ -74,6 +77,32 @@ func evalMinusPrefixOpExp(right object.Object) object.Object {
 
 	value := right.(*object.Integer).Value
 	return &object.Integer{Value: -value}
+}
+
+func evalInfixExpression(left object.Object, operator string, right object.Object) object.Object {
+	if left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ {
+		return evalIntegerInfixExpression(left, operator, right)
+	}
+
+	return NULL
+}
+
+func evalIntegerInfixExpression(left object.Object, operator string, right object.Object) object.Object {
+	lVal := left.(*object.Integer).Value
+	rVal := right.(*object.Integer).Value
+
+	switch token.TokenType(operator) {
+	case token.PLUS:
+		return &object.Integer{Value: lVal + rVal}
+	case token.MINUS:
+		return &object.Integer{Value: lVal - rVal}
+	case token.ASTERISK:
+		return &object.Integer{Value: lVal * rVal}
+	case token.SLASH:
+		return &object.Integer{Value: lVal / rVal}
+	}
+
+	return NULL
 }
 
 func nativeBoolToBooleanObj(input bool) *object.Boolean {
