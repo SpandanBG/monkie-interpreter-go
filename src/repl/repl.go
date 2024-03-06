@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"sudocoding.xyz/interpreter_in_go/src/evaluator"
 	"sudocoding.xyz/interpreter_in_go/src/lexer"
 	"sudocoding.xyz/interpreter_in_go/src/parser"
 )
@@ -39,7 +40,12 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		io.WriteString(out, program.String())
+		evaluator := evaluator.Eval(program)
+		if evaluator == nil {
+			continue
+		}
+
+		io.WriteString(out, evaluator.Inspect())
 		io.WriteString(out, "\n")
 	}
 }
