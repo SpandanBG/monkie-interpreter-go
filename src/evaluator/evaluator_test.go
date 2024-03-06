@@ -44,6 +44,13 @@ func testBooleanObj(t *testing.T, obj object.Object, expected bool) bool {
 	return true
 }
 
+func testNullObj(t *testing.T, obj object.Object) bool {
+	result, ok := obj.(*object.Null)
+	eq(t, true, ok, "Failed to typecast obj to object.Null")
+	eq(t, NULL, result, "Expected NULL. Didn't match")
+	return true
+}
+
 func Test_EvalIntegerExpression(t *testing.T) {
 	for _, test := range []struct {
 		input    string
@@ -115,6 +122,32 @@ func Test_BangOperator(t *testing.T) {
 	} {
 		t.Run(fmt.Sprintf("Test for input %s", test.input), func(t *testing.T) {
 			eq(t, true, testBooleanObj(t, testEval(test.input), test.expected))
+		})
+	}
+}
+
+func Test_IfElseExpression(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected interface{}
+	}{
+		{"if (true) { 10 }", 10},
+		{"if (false) { 10 }", nil},
+		{"if (1) { 10 }", 10},
+		{"if (0) { 10 }", nil},
+		{"if (1 < 2) { 10 }", 10},
+		{"if (1 > 2) { 10 }", nil},
+		{"if (1 < 2) { 10 } else { 20 }", 10},
+		{"if (1 > 2) { 10 } else { 20 }", 20},
+	} {
+		t.Run(fmt.Sprintf("Test if-else for %s", test.input), func(t *testing.T) {
+			evaluated := testEval(test.input)
+
+			if integer, ok := test.expected.(int); ok {
+				eq(t, true, testIntegerObj(t, evaluated, int64(integer)))
+			} else {
+				eq(t, true, testNullObj(t, evaluated))
+			}
 		})
 	}
 }
