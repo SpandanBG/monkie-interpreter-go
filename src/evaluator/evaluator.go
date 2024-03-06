@@ -24,7 +24,12 @@ func Eval(node ast.Node) object.Object {
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
 	case *ast.ReturnStatement:
-		return &object.ReturnValue{Value: Eval(node.ReturnValue)}
+		value, ok := expectEval(node.ReturnValue)
+		if !ok {
+			return value
+		}
+
+		return &object.ReturnValue{Value: value}
 
 		// Expression
 	case *ast.IntegerLiteral:
@@ -32,14 +37,35 @@ func Eval(node ast.Node) object.Object {
 	case *ast.Boolean:
 		return nativeBoolToBooleanObj(node.Value)
 	case *ast.PrefixExpression:
-		return evalPrefixExpression(node.Operator, Eval(node.Right))
+		right, ok := expectEval(node.Right)
+		if !ok {
+			return right
+		}
+
+		return evalPrefixExpression(node.Operator, right)
 	case *ast.InfixExpression:
-		return evalInfixExpression(Eval(node.Left), node.Operator, Eval(node.Right))
+		left, ok := expectEval(node.Left)
+		if !ok {
+			return left
+		}
+
+		right, ok := expectEval(node.Right)
+		if !ok {
+			return right
+		}
+
+		return evalInfixExpression(left, node.Operator, right)
 	case *ast.IfExpression:
 		return evalIfExpression(node)
 	}
 
 	return NULL
+}
+
+func expectEval(node ast.Node) (object.Object, bool) {
+	evaluated := Eval(node)
+	_, ok := evaluated.(*object.Error)
+	return evaluated, !ok
 }
 
 func evalProgram(statements []ast.Statement) object.Object {
@@ -167,7 +193,10 @@ func evalBooleanInfixExpression(left object.Object, operator string, right objec
 }
 
 func evalIfExpression(ie *ast.IfExpression) object.Object {
-	condition := Eval(ie.Condition)
+	condition, ok := expectEval(ie.Condition)
+	if !ok {
+		return condition
+	}
 
 	if isTruthy(condition) {
 		return Eval(ie.Consequence)
