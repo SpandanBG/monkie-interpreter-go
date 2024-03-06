@@ -180,13 +180,24 @@ func (p *Parser) parseStatement() ast.Statement {
 			return returnStmt
 		}
 		return nil
-	default:
-		if expStmt := p.parseExpressionStatement(); expStmt != nil {
-			return expStmt
+	case token.IDENT:
+		if !p.peekTokenIs(token.ASSIGN) {
+			if expStmt := p.parseExpressionStatement(); expStmt != nil {
+				return expStmt
+			}
+			return nil
+		}
+
+		if assignStmt := p.parseAssignmentStatement(); assignStmt != nil {
+			return assignStmt
 		}
 		return nil
 	}
 
+	if expStmt := p.parseExpressionStatement(); expStmt != nil {
+		return expStmt
+	}
+	return nil
 }
 
 // parseLetStatement - parses a let statement
@@ -222,6 +233,38 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt.ReturnValue = p.parseExpression(LOWEST)
 
 	// Remove optional semicolon
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+// parseAssignmentStatement - parse an assignment statement
+func (p *Parser) parseAssignmentStatement() *ast.Assignment {
+	stmt := &ast.Assignment{Token: p.peekToken, Identifier: p.parseIdentifier().(*ast.Identifier)}
+
+	if err := p.expectNextToken(token.ASSIGN); err != nil {
+		fmt.Println("Expected = in assigment operation: ", err.Error())
+		return nil
+	}
+
+	p.nextToken()
+	val := p.parseExpression(LOWEST)
+	if val == nil {
+		err := errors.New("Got empty expression on RHS of assignment")
+		fmt.Println(err.Error())
+		p.errs = append(p.errs, err)
+
+		if p.peekTokenIs(token.SEMICOLON) {
+			p.nextToken()
+		}
+
+		return nil
+	}
+
+	stmt.Value = val
+
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}

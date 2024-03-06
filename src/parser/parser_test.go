@@ -572,3 +572,29 @@ func Test_CallExpression(t *testing.T) {
 	eq(t, true, testInfixExpression(t, exp.Arguments[1], 2, "*", 3))
 	eq(t, true, testInfixExpression(t, exp.Arguments[2], 4, "+", 5))
 }
+
+func Test_Assignment(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader("a = a + b * 5;"))
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkParserErrs(t, p)
+
+	eq(t, 1, len(program.Statements), "Expected 1 statement in the program")
+
+	stmt, ok := program.Statements[0].(*ast.Assignment)
+	eq(t, true, ok, "Failed to typecast program.Statements[0] to *ast.Assignment")
+	notEq(t, nil, stmt.Identifier, "Found nil identifier")
+	notEq(t, nil, &stmt.Value, "Found nil value")
+	eq(t, "a = (a + (b * 5))", stmt.String(), "Invalid assignment")
+}
+
+func Test_AssignmentErr(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader("a = ;"))
+	p := New(l)
+	p.ParseProgram()
+
+	eq(t, 2, len(p.Errors()), "Expected 2 error")
+	eq(t, "No prefix parser function for ; found", p.Errors()[0].Error(), "1st Err msg didn't match")
+	eq(t, "Got empty expression on RHS of assignment", p.Errors()[1].Error(), "2nd Err msg didn't match")
+}
