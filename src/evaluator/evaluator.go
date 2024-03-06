@@ -35,6 +35,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		} else {
 			return value
 		}
+	case *ast.Assignment:
+		if value, ok := expectEval(node.Value, env); ok {
+			env.Set(node.Identifier.Value, value)
+		} else {
+			return value
+		}
 
 		// Expression
 	case *ast.IntegerLiteral:

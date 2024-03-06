@@ -209,3 +209,19 @@ func Test_LetStatements(t *testing.T) {
 		})
 	}
 }
+
+func Test_AssigmentStatements(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected int64
+	}{
+		{"let a = 5; a = a + 5; a", 10},
+		{"let a = 5 * 5; a = 10; a", 10},
+		{"let a = 5; let b = a + 10; a = b; a", 15},
+		{"let a = 5; let b = a; let c = 0; c = a + b + 5; c;", 15},
+	} {
+		t.Run(fmt.Sprintf("Test let statement for %s", test.input), func(t *testing.T) {
+			eq(t, true, testIntegerObj(t, testEval(test.input), test.expected))
+		})
+	}
+}
