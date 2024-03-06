@@ -183,6 +183,7 @@ func Test_ErrorHandling(t *testing.T) {
 		{"if (10 > 1) { true + false }", "unknown operator: BOOLEAN + BOOLEAN"},
 		{"if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: BOOLEAN + BOOLEAN"},
 		{"foobar", "identifier not found: foobar"},
+		{"a = 5;", "variable a hasn't been initialized"},
 	} {
 		t.Run(fmt.Sprintf("Test error for %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)

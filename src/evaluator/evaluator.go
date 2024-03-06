@@ -36,6 +36,9 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return value
 		}
 	case *ast.Assignment:
+		if _, ok := env.Get(node.Identifier.Value); !ok {
+			return newError("variable %v hasn't been initialized", node.Identifier.Value)
+		}
 		if value, ok := expectEval(node.Value, env); ok {
 			env.Set(node.Identifier.Value, value)
 		} else {
