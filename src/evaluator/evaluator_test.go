@@ -73,3 +73,20 @@ func Test_EvalBooleanExpression(t *testing.T) {
 		})
 	}
 }
+
+func Test_BangOperator(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected bool
+	}{
+		{"!true", false},
+		{"!false", true},
+		{"!5", false},
+		{"!!true", true},
+		{"!!5", true},
+	} {
+		t.Run(fmt.Sprintf("Test for input %s", test.input), func(t *testing.T) {
+			eq(t, true, testBooleanObj(t, testEval(test.input), test.expected))
+		})
+	}
+}
