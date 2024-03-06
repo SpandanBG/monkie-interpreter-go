@@ -51,6 +51,8 @@ func Test_EvalIntegerExpression(t *testing.T) {
 	}{
 		{"5", 5},
 		{"10", 10},
+		{"-5", -5},
+		{"-10", -10},
 	} {
 		t.Run(fmt.Sprintf("Tests for %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)

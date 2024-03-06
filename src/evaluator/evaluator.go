@@ -45,6 +45,8 @@ func evalPrefixExpression(operator string, right object.Object) object.Object {
 	switch operator {
 	case "!":
 		return evalBangOperatorExp(right)
+	case "-":
+		return evalMinusPrefixOpExp(right)
 	}
 	return NULL
 }
@@ -63,6 +65,15 @@ func evalBangOperatorExp(right object.Object) object.Object {
 	}
 
 	return FALSE
+}
+
+func evalMinusPrefixOpExp(right object.Object) object.Object {
+	if right.Type() != object.INTEGER_OBJ {
+		return NULL
+	}
+
+	value := right.(*object.Integer).Value
+	return &object.Integer{Value: -value}
 }
 
 func nativeBoolToBooleanObj(input bool) *object.Boolean {
