@@ -151,3 +151,20 @@ func Test_IfElseExpression(t *testing.T) {
 		})
 	}
 }
+
+func Test_ReturnStatement(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected int16
+	}{
+		{"return 10;", 10},
+		{"return 10; 9;", 10},
+		{"return 2 * 5; 9;", 10},
+		{"9; return 2 * 5; 9;", 10},
+		{"if (10 > 1) { if (10 > 1) { return 10; } return 1; }", 10},
+	} {
+		t.Run(fmt.Sprintf("Test return statement for %s", test.input), func(t *testing.T) {
+			eq(t, true, testIntegerObj(t, testEval(test.input), int64(test.expected)))
+		})
+	}
+}
