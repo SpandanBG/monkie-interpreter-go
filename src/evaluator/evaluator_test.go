@@ -37,6 +37,13 @@ func testIntegerObj(t *testing.T, obj object.Object, expected int64) bool {
 	return true
 }
 
+func testBooleanObj(t *testing.T, obj object.Object, expected bool) bool {
+	result, ok := obj.(*object.Boolean)
+	eq(t, true, ok, "Failed to typecast obj to object.Boolean")
+	eq(t, expected, result.Value, "Expected boolean didn't match")
+	return true
+}
+
 func Test_EvalIntegerExpression(t *testing.T) {
 	for _, test := range []struct {
 		input    string
@@ -48,6 +55,21 @@ func Test_EvalIntegerExpression(t *testing.T) {
 		t.Run(fmt.Sprintf("Tests for %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)
 			eq(t, true, testIntegerObj(t, evaluated, test.expected), "Did not match expected")
+		})
+	}
+}
+
+func Test_EvalBooleanExpression(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected bool
+	}{
+		{"true", true},
+		{"false", false},
+	} {
+		t.Run(fmt.Sprintf("Tests for %s", test.input), func(t *testing.T) {
+			evaluated := testEval(test.input)
+			eq(t, true, testBooleanObj(t, evaluated, test.expected), "Did not match expected")
 		})
 	}
 }
