@@ -168,3 +168,26 @@ func Test_ReturnStatement(t *testing.T) {
 		})
 	}
 }
+
+func Test_ErrorHandling(t *testing.T) {
+	for _, test := range []struct {
+		input  string
+		errMsg string
+	}{
+		{"5 + true", "type mismatch: INTEGER + BOOLEAN"},
+		{"5 + true; 5", "type mismatch: INTEGER + BOOLEAN"},
+		{"-true;", "unknown operator: -BOOLEAN"},
+		{"true + false;", "unknown operator: BOOLEAN + BOOLEAN"},
+		{"5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"},
+		{"if (10 > 1) { true + false }", "unknown operator: BOOLEAN + BOOLEAN"},
+		{"if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: BOOLEAN + BOOLEAN"},
+	} {
+		t.Run(fmt.Sprintf("Test error for %s", test.input), func(t *testing.T) {
+			evaluated := testEval(test.input)
+
+			errObj, ok := evaluated.(*object.Error)
+			eq(t, true, ok, "Failed to typecast evaulated to *object.Error")
+			eq(t, test.errMsg, errObj.Message, "Error message mismatch")
+		})
+	}
+}

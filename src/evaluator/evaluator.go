@@ -1,6 +1,8 @@
 package evaluator
 
 import (
+	"fmt"
+
 	"sudocoding.xyz/interpreter_in_go/src/object"
 	"sudocoding.xyz/interpreter_in_go/src/parser/ast"
 	"sudocoding.xyz/interpreter_in_go/src/token"
@@ -46,9 +48,11 @@ func evalProgram(statements []ast.Statement) object.Object {
 	for _, statement := range statements {
 		result = Eval(statement)
 
-		// Stop processing block if return statement reached
-		if returnValue, ok := result.(*object.ReturnValue); ok {
-			return returnValue.Value
+		switch result := result.(type) {
+		case *object.ReturnValue:
+			return result.Value
+		case *object.Error:
+			return result
 		}
 	}
 
@@ -62,7 +66,7 @@ func evalStatements(statements []ast.Statement) object.Object {
 		result = Eval(statement)
 
 		// Stop processing block if return statement reached
-		if result.Type() == object.RETURN_VALUE_OBJ {
+		if result.Type() == object.RETURN_VALUE_OBJ || result.Type() == object.ERROR_OBJ {
 			return result
 		}
 	}
@@ -77,7 +81,8 @@ func evalPrefixExpression(operator string, right object.Object) object.Object {
 	case "-":
 		return evalMinusPrefixOpExp(right)
 	}
-	return NULL
+
+	return newError("unknown operator: %s%s", operator, right.Type())
 }
 
 func evalBangOperatorExp(right object.Object) object.Object {
@@ -98,7 +103,7 @@ func evalBangOperatorExp(right object.Object) object.Object {
 
 func evalMinusPrefixOpExp(right object.Object) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
-		return NULL
+		return newError("unknown operator: -%s", right.Type())
 	}
 
 	value := right.(*object.Integer).Value
@@ -114,7 +119,7 @@ func evalInfixExpression(left object.Object, operator string, right object.Objec
 		return evalBooleanInfixExpression(left, operator, right)
 	}
 
-	return NULL
+	return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
 }
 
 func evalIntegerInfixExpression(left object.Object, operator string, right object.Object) object.Object {
@@ -144,7 +149,7 @@ func evalIntegerInfixExpression(left object.Object, operator string, right objec
 		return nativeBoolToBooleanObj(lVal <= rVal)
 	}
 
-	return NULL
+	return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 }
 
 func evalBooleanInfixExpression(left object.Object, operator string, right object.Object) object.Object {
@@ -158,7 +163,7 @@ func evalBooleanInfixExpression(left object.Object, operator string, right objec
 		return nativeBoolToBooleanObj(lVal != rVal)
 	}
 
-	return NULL
+	return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 }
 
 func evalIfExpression(ie *ast.IfExpression) object.Object {
@@ -194,4 +199,8 @@ func isTruthy(obj object.Object) bool {
 		return false
 	}
 	return true
+}
+
+func newError(format string, a ...interface{}) *object.Error {
+	return &object.Error{Message: fmt.Sprintf(format, a...)}
 }
