@@ -254,3 +254,12 @@ func Test_FunctionApplication(t *testing.T) {
 		})
 	}
 }
+
+func Test_Closure(t *testing.T) {
+	input := `
+    let add = fn(x) { fn(y) { x + y } };
+    let addTwo = add(2);
+    addTwo(4);
+  `
+	eq(t, true, testIntegerObj(t, testEval(input), 6))
+}
