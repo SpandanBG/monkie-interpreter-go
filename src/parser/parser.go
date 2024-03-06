@@ -36,7 +36,6 @@ var precedences = map[token.TokenType]OpPrec{
 	token.MINUS:    SUM,
 	token.ASTERISK: PRODUCT,
 	token.SLASH:    DIVIDE,
-	token.LPAREN:   CALL,
 }
 
 type (
@@ -88,7 +87,6 @@ func New(l *lexer.Lexer_V2) *Parser {
 	p.registerInfixParser(token.LTE, p.parseInfixExpression)
 	p.registerInfixParser(token.GT, p.parseInfixExpression)
 	p.registerInfixParser(token.GTE, p.parseInfixExpression)
-	p.registerInfixParser(token.LPAREN, p.parseCallExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -459,38 +457,4 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	}
 
 	return identifiers
-}
-
-// parseCallExpression - parse a function call
-func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
-	exp := &ast.CallExpression{Token: p.curToken, Function: function}
-	exp.Arguments = p.parseCallArguments()
-	return exp
-}
-
-// parseCallArguments - parse function call arguments
-func (p *Parser) parseCallArguments() []ast.Expression {
-	args := []ast.Expression{}
-
-	if p.peekTokenIs(token.RPAREN) {
-		p.nextToken()
-		return args
-	}
-
-	p.nextToken()
-	args = append(args, p.parseExpression(LOWEST))
-
-	for p.peekTokenIs(token.COMMA) {
-		p.nextToken()
-		p.nextToken()
-
-		args = append(args, p.parseExpression(LOWEST))
-	}
-
-	if err := p.expectNextToken(token.RPAREN); err != nil {
-		fmt.Println("Expected ) missing in function call: ", err.Error())
-		return nil
-	}
-
-	return args
 }
