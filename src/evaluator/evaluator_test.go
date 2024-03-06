@@ -79,6 +79,21 @@ func Test_EvalBooleanExpression(t *testing.T) {
 	}{
 		{"true", true},
 		{"false", false},
+		{"1 < 2", true},
+		{"1 > 2", false},
+		{"1 < 1", false},
+		{"1 > 1", false},
+		{"1 == 1", true},
+		{"1 != 1", false},
+		{"1 <= 2", true},
+		{"1 >= 2", false},
+		{"true == true", true},
+		{"true != true", false},
+		{"false == false", true},
+		{"false != false", false},
+		{"(1 < 2) == true", true},
+		{"(1 > 2) == true", false},
+		{"(5 * 5) == 25 == true", true},
 	} {
 		t.Run(fmt.Sprintf("Tests for %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)
