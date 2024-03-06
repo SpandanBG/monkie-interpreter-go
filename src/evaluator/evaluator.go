@@ -5,6 +5,11 @@ import (
 	"sudocoding.xyz/interpreter_in_go/src/parser/ast"
 )
 
+var (
+	TRUE  = &object.Boolean{Value: true}
+	FALSE = &object.Boolean{Value: false}
+)
+
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	// Statements
@@ -17,7 +22,7 @@ func Eval(node ast.Node) object.Object {
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
 	case *ast.Boolean:
-		return &object.Boolean{Value: node.Value}
+    return nativeBoolToBooleanObj(node.Value)
 	}
 
 	return nil
@@ -31,4 +36,11 @@ func evalStatements(statements []ast.Statement) object.Object {
 	}
 
 	return result
+}
+
+func nativeBoolToBooleanObj(input bool) *object.Boolean {
+	if input {
+		return TRUE
+	}
+	return FALSE
 }
