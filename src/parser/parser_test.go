@@ -354,6 +354,9 @@ func Test_OperatorPrecedenceParsing(t *testing.T) {
 		{"2 / (5 + 5)", "(2 / (5 + 5))"},
 		{"-(5 + 5)", "(-(5 + 5))"},
 		{"!(true == true)", "(!(true == true))"},
+		{"a + add(b * c) + d", "((a + add((b * c))) + d)"},
+		{"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
+		{"add(a + b + c * d / f + g)", "add((((a + b) + (c * (d / f))) + g))"},
 	} {
 		t.Run(fmt.Sprintf("Test %s to give %s", test.input, test.expected), func(t *testing.T) {
 			l := lexer.New_V2(strings.NewReader(test.input))
@@ -496,4 +499,24 @@ func Test_FunctionParameterParsing(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_CallExpression(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader("add(1, 2 * 3, 4 + 5);"))
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkParserErrs(t, p)
+
+	eq(t, 1, len(program.Statements), "Expected 1 statement in program")
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecast program.Statement[0] to *ast.ExpressionStatement")
+
+	exp, ok := stmt.Expression.(*ast.CallExpression)
+	eq(t, true, ok, "Failed to typecast stmt.Expression to *ast.CallExpression")
+	eq(t, true, testIdentifier(t, exp.Function, "add"))
+	eq(t, true, testLiteralExpression(t, exp.Arguments[0], 1))
+	eq(t, true, testInfixExpression(t, exp.Arguments[1], 2, "*", 3))
+	eq(t, true, testInfixExpression(t, exp.Arguments[2], 4, "+", 5))
 }
