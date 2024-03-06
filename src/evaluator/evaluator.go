@@ -72,6 +72,20 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIfExpression(node, env)
 	case *ast.Identifier:
 		return evalIdentifier(node, env)
+	case *ast.FunctionLiteral:
+		return &object.Function{Parameters: node.Parameters, Env: env, Body: node.Body}
+	case *ast.CallExpression:
+		fn, ok := expectEval(node.Function, env)
+		if !ok {
+			return fn
+		}
+
+		args, err := evalExpressions(node.Arguments, env)
+		if err != nil {
+			return err
+		}
+
+		return applyFn(fn, args)
 	}
 
 	return NULL
@@ -113,6 +127,20 @@ func evalStatements(statements []ast.Statement, env *object.Environment) object.
 	}
 
 	return result
+}
+
+func evalExpressions(expressons []ast.Expression, env *object.Environment) ([]object.Object, object.Object) {
+	var result []object.Object
+
+	for _, e := range expressons {
+		if evaluated, ok := expectEval(e, env); ok {
+			result = append(result, evaluated)
+		} else {
+			return nil, evaluated
+		}
+	}
+
+	return result, nil
 }
 
 func evalPrefixExpression(operator string, right object.Object) object.Object {
@@ -228,6 +256,33 @@ func evalIdentifier(id *ast.Identifier, env *object.Environment) object.Object {
 	}
 
 	return newError("identifier not found: %s", id.Value)
+}
+
+func applyFn(fn object.Object, args []object.Object) object.Object {
+	fun, ok := fn.(*object.Function)
+	if !ok {
+		return newError("not a function: %s", fn.Type())
+	}
+
+	extendedEnv := extendFuncEnv(fun, args)
+	evaluated := Eval(fun.Body, extendedEnv)
+	return unwrapReturnValue(evaluated)
+}
+
+func extendFuncEnv(fn *object.Function, args []object.Object) *object.Environment {
+	env := object.NewEnclosedEnv(fn.Env)
+	for i, param := range fn.Parameters {
+		env.Set(param.Value, args[i])
+	}
+	return env
+}
+
+func unwrapReturnValue(obj object.Object) object.Object {
+	switch obj := obj.(type) {
+	case *object.ReturnValue:
+		return obj.Value
+	}
+	return obj
 }
 
 func nativeBoolToBooleanObj(input bool) *object.Boolean {

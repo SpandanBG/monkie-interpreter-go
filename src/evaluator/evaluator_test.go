@@ -226,3 +226,31 @@ func Test_AssigmentStatements(t *testing.T) {
 		})
 	}
 }
+
+func Test_FunctionObject(t *testing.T) {
+	input := "fn(x) { x + 2; };"
+	evaluated := testEval(input)
+
+	fn, ok := evaluated.(*object.Function)
+	eq(t, true, ok, "Failed to typecast evaluated to *object.Function")
+	eq(t, 1, len(fn.Parameters), "Expected 1 param in function def")
+	eq(t, "x", fn.Parameters[0].String(), "Function param name didn't match")
+	eq(t, "(x + 2)", fn.Body.String(), "Function body didn't match")
+}
+
+func Test_FunctionApplication(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected int64
+	}{
+		{"let id = fn(x) { x }; id(5);", 5},
+		{"let id = fn(x) { return x; }; id(5);", 5},
+		{"let double = fn(x) { x * 2; }; double(2);", 4},
+		{"let add = fn(a, b) { a + b }; add(1 + 1, add(2, 3))", 7},
+		{"fn(x) { x }(5)", 5},
+	} {
+		t.Run(fmt.Sprintf("Test function call %s", test.input), func(t *testing.T) {
+			eq(t, true, testIntegerObj(t, testEval(test.input), test.expected))
+		})
+	}
+}
