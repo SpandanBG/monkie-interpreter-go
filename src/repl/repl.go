@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"sudocoding.xyz/interpreter_in_go/src/lexer"
-	"sudocoding.xyz/interpreter_in_go/src/token"
+	"sudocoding.xyz/interpreter_in_go/src/parser"
 )
 
 const PROMPT = ">> "
@@ -31,9 +31,21 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		l := lexer.New_V2(strings.NewReader(line))
+		p := parser.New(l)
 
-		for tok := l.NextToken_V2(); tok.Type != token.EOF; tok = l.NextToken_V2() {
-			fmt.Fprintf(out, "%+v\n", tok)
+		program := p.ParseProgram()
+		if len(p.Errors()) != 0 {
+			printParseErrors(out, p.Errors())
+			continue
 		}
+
+		io.WriteString(out, program.String())
+		io.WriteString(out, "\n")
+	}
+}
+
+func printParseErrors(out io.Writer, errors []error) {
+	for _, err := range errors {
+		io.WriteString(out, "\t"+err.Error()+"\n")
 	}
 }
