@@ -26,8 +26,9 @@ func testEval(input string) object.Object {
 	l := lexer.New_V2(strings.NewReader(input))
 	p := parser.New(l)
 	program := p.ParseProgram()
+	env := object.NewEnvironment()
 
-	return Eval(program)
+	return Eval(program, env)
 }
 
 func testIntegerObj(t *testing.T, obj object.Object, expected int64) bool {
@@ -181,6 +182,7 @@ func Test_ErrorHandling(t *testing.T) {
 		{"5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"},
 		{"if (10 > 1) { true + false }", "unknown operator: BOOLEAN + BOOLEAN"},
 		{"if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: BOOLEAN + BOOLEAN"},
+		{"foobar", "identifier not found: foobar"},
 	} {
 		t.Run(fmt.Sprintf("Test error for %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)
@@ -188,6 +190,22 @@ func Test_ErrorHandling(t *testing.T) {
 			errObj, ok := evaluated.(*object.Error)
 			eq(t, true, ok, "Failed to typecast evaulated to *object.Error")
 			eq(t, test.errMsg, errObj.Message, "Error message mismatch")
+		})
+	}
+}
+
+func Test_LetStatements(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected int64
+	}{
+		{"let a = 5; a;", 5},
+		{"let a = 5 * 5; a;", 25},
+		{"let a = 5; let b = a; b", 5},
+		{"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+	} {
+		t.Run(fmt.Sprintf("Test let statement for %s", test.input), func(t *testing.T) {
+			eq(t, true, testIntegerObj(t, testEval(test.input), test.expected))
 		})
 	}
 }
