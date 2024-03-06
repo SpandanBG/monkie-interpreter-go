@@ -203,13 +203,12 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	// TODO: We skipping the expression till we find the semicolon
+	p.nextToken()
 
-	for !p.curTokenIs(token.SEMICOLON) {
-		if err := p.nextToken(); err != nil {
-			fmt.Printf("Error looking for semicolon at end of let statement: %s\n", err.Error())
-			return nil
-		}
+	stmt.Value = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
 	}
 
 	return stmt
@@ -220,13 +219,11 @@ func (p *Parser) parseReturnStatement() *ast.ReturnStatement {
 	stmt := &ast.ReturnStatement{Token: p.curToken}
 	p.nextToken()
 
-	// TODO: We skipping the expression till we find the semicolon
+	stmt.ReturnValue = p.parseExpression(LOWEST)
 
-	for !p.curTokenIs(token.SEMICOLON) {
-		if err := p.nextToken(); err != nil {
-			fmt.Printf("Error looking for semicolon at end of let statement: %s\n", err.Error())
-			return nil
-		}
+	// Remove optional semicolon
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
 	}
 
 	return stmt
@@ -487,8 +484,8 @@ func (p *Parser) parseCallArguments() []ast.Expression {
 		args = append(args, p.parseExpression(LOWEST))
 	}
 
-  if err := p.expectNextToken(token.RPAREN); err != nil {
-    fmt.Println("Expected ) missing in function call: ", err.Error())
+	if err := p.expectNextToken(token.RPAREN); err != nil {
+		fmt.Println("Expected ) missing in function call: ", err.Error())
 		return nil
 	}
 

@@ -95,7 +95,7 @@ func checkParserErrs(t *testing.T, p *Parser) bool {
 	return false
 }
 
-func Test_LetStatements(t *testing.T) {
+func Test_LetStatement(t *testing.T) {
 	input := `let x = 5;
   let y = 10;
   let foobar = 8723456;`
@@ -111,10 +111,38 @@ func Test_LetStatements(t *testing.T) {
 
 	expectedIdentifiers := []string{"x", "y", "foobar"}
 	for i, expectedIdentifier := range expectedIdentifiers {
-		stmt := program.Statements[i]
+		stmt := program.Statements[i].(*ast.LetStatement)
 
 		notEq(t, nil, stmt, "Got null statement at", strconv.Itoa(i))
 		eq(t, true, testLetStatement(t, stmt, expectedIdentifier))
+	}
+}
+
+func Test_LetStatements(t *testing.T) {
+	for _, test := range []struct {
+		input         string
+		expectedId    string
+		expectedValue interface{}
+	}{
+		{"let x = 5;", "x", 5},
+		{"let y = true;", "y", true},
+		{"let foobar = y;", "foobar", "y"},
+	} {
+		t.Run(fmt.Sprintf("Test ran for input %s", test.input), func(t *testing.T) {
+			l := lexer.New_V2(strings.NewReader(test.input))
+			p := New(l)
+			program := p.ParseProgram()
+
+			checkParserErrs(t, p)
+
+			eq(t, 1, len(program.Statements), "Not found expected number of statements")
+
+			stmt := program.Statements[0]
+			eq(t, true, testLetStatement(t, stmt, test.expectedId))
+
+			val := stmt.(*ast.LetStatement).Value
+			eq(t, true, testLiteralExpression(t, val, test.expectedValue))
+		})
 	}
 }
 
@@ -138,6 +166,30 @@ func Test_ReturnStatement(t *testing.T) {
 
 		eq(t, true, ok, "Failed to typecast statement to let statement")
 		eq(t, "return", returnStmt.TokenLiteral(), "Token literal of return didn't match")
+	}
+}
+
+func Test_ReturnStatements(t *testing.T) {
+	for _, test := range []struct {
+		input         string
+		expectedValue interface{}
+	}{
+		{"return 5;", 5},
+		{"return true;", true},
+		{"return y;", "y"},
+	} {
+		t.Run(fmt.Sprintf("Test ran for input %s", test.input), func(t *testing.T) {
+			l := lexer.New_V2(strings.NewReader(test.input))
+			p := New(l)
+			program := p.ParseProgram()
+
+			checkParserErrs(t, p)
+
+			eq(t, 1, len(program.Statements), "Not found expected number of statements")
+
+			val := program.Statements[0].(*ast.ReturnStatement).ReturnValue
+			eq(t, true, testLiteralExpression(t, val, test.expectedValue))
+		})
 	}
 }
 
