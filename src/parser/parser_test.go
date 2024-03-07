@@ -478,6 +478,8 @@ func Test_OperatorPrecedenceParsing(t *testing.T) {
 		{"a + add(b * c) + d", "((a + add((b * c))) + d)"},
 		{"add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))", "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))"},
 		{"add(a + b + c * d / f + g)", "add((((a + b) + (c * (d / f))) + g))"},
+		{"a * [1, 2, 3, 4][b * c] * d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"},
+		{"add(a * b[2], b[1], 2 * [1, 2][1])", "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))"},
 	} {
 		t.Run(fmt.Sprintf("Test %s to give %s", test.input, test.expected), func(t *testing.T) {
 			l := lexer.New_V2(strings.NewReader(test.input))
@@ -666,4 +668,44 @@ func Test_AssignmentErr(t *testing.T) {
 	eq(t, 2, len(p.Errors()), "Expected 2 error")
 	eq(t, "No prefix parser function for ; found", p.Errors()[0].Error(), "1st Err msg didn't match")
 	eq(t, "Got empty expression on RHS of assignment", p.Errors()[1].Error(), "2nd Err msg didn't match")
+}
+
+func Test_ParsingArrayLiteral(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader(`[1, 2 * 3, "asdf", true, false]`))
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkParserErrs(t, p)
+
+	eq(t, 1, len(program.Statements), "Expected 1 statement in program")
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecast program.Statements[0] to *ast.ExpressionStatement")
+
+	arr, ok := stmt.Expression.(*ast.ArrayLiteral)
+	eq(t, true, ok, "Failed to typecast stmt.Expression to *ast.ArrayLiteral")
+	eq(t, 5, len(arr.Elements), "Expected 5 elements in the array")
+	eq(t, true, testIntegerLiteral(t, arr.Elements[0], 1))
+	eq(t, true, testInfixExpression(t, arr.Elements[1], 2, "*", 3))
+	eq(t, true, testStringLiteral(t, arr.Elements[2], "asdf"))
+	eq(t, true, testBoolean(t, arr.Elements[3], true))
+	eq(t, true, testBoolean(t, arr.Elements[4], false))
+}
+
+func Test_IndexExpression(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader("arr[1 + 1]"))
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkParserErrs(t, p)
+
+	eq(t, 1, len(program.Statements), "Expected 1 program statement")
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecast program.Statements[0] to *ast.ExpressionStatement")
+
+	iExp, ok := stmt.Expression.(*ast.IndexExpression)
+	eq(t, true, ok, "Failed to typecast stmt.Expression to *ast.IndexExpression")
+	eq(t, true, testIdentifier(t, iExp.Left, "arr"))
+	eq(t, true, testInfixExpression(t, iExp.Index, 1, "+", 1))
 }

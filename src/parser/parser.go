@@ -23,6 +23,7 @@ const (
 	DIVIDE      // /
 	PREFIX      // -X or !x
 	CALL        // function call
+	INDEX       // array[index]
 )
 
 var precedences = map[token.TokenType]OpPrec{
@@ -37,6 +38,7 @@ var precedences = map[token.TokenType]OpPrec{
 	token.ASTERISK: PRODUCT,
 	token.SLASH:    DIVIDE,
 	token.LPAREN:   CALL,
+	token.LBRACKET: INDEX,
 }
 
 type (
@@ -78,6 +80,7 @@ func New(l *lexer.Lexer_V2) *Parser {
 	p.registerPrefixParser(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefixParser(token.IF, p.parseIfExpression)
 	p.registerPrefixParser(token.FUNCTION, p.parseFunctionLiteral)
+	p.registerPrefixParser(token.LBRACKET, p.parseArrayLiteral)
 
 	p.registerInfixParser(token.PLUS, p.parseInfixExpression)
 	p.registerInfixParser(token.MINUS, p.parseInfixExpression)
@@ -90,6 +93,7 @@ func New(l *lexer.Lexer_V2) *Parser {
 	p.registerInfixParser(token.GT, p.parseInfixExpression)
 	p.registerInfixParser(token.GTE, p.parseInfixExpression)
 	p.registerInfixParser(token.LPAREN, p.parseCallExpression)
+	p.registerInfixParser(token.LBRACKET, p.parseIndexExpression)
 
 	p.nextToken()
 	p.nextToken()
@@ -510,33 +514,61 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 // parseCallExpression - parse a function call
 func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 	exp := &ast.CallExpression{Token: p.curToken, Function: function}
-	exp.Arguments = p.parseCallArguments()
+	args := p.parseExpressionList(token.RPAREN)
+	if args == nil {
+		return nil
+	}
+	exp.Arguments = args
 	return exp
 }
 
-// parseCallArguments - parse function call arguments
-func (p *Parser) parseCallArguments() []ast.Expression {
-	args := []ast.Expression{}
+// parseArrayLiteral - parse an array
+func (p *Parser) parseArrayLiteral() ast.Expression {
+	array := ast.ArrayLiteral{Token: p.curToken}
+	elements := p.parseExpressionList(token.RBRACKET)
+	if elements == nil {
+		return nil
+	}
+	array.Elements = elements
+	return &array
+}
 
-	if p.peekTokenIs(token.RPAREN) {
+// parseExpressionList - parses a list of expression till the closing token is met
+func (p *Parser) parseExpressionList(closingTag token.TokenType) []ast.Expression {
+	array := []ast.Expression{}
+
+	if p.peekTokenIs(closingTag) {
 		p.nextToken()
-		return args
+		return array
 	}
 
 	p.nextToken()
-	args = append(args, p.parseExpression(LOWEST))
+	array = append(array, p.parseExpression(LOWEST))
 
 	for p.peekTokenIs(token.COMMA) {
 		p.nextToken()
 		p.nextToken()
-
-		args = append(args, p.parseExpression(LOWEST))
+		array = append(array, p.parseExpression(LOWEST))
 	}
 
-	if err := p.expectNextToken(token.RPAREN); err != nil {
-		fmt.Println("Expected ) missing in function call: ", err.Error())
+	if err := p.expectNextToken(closingTag); err != nil {
+		fmt.Println("Expected closing ] in array not found: ", err.Error())
 		return nil
 	}
 
-	return args
+	return array
+}
+
+// parseIndexExpression - parse an array indexing
+func (p *Parser) parseIndexExpression(left ast.Expression) ast.Expression {
+	exp := &ast.IndexExpression{Token: p.curToken, Left: left}
+	p.nextToken()
+
+	exp.Index = p.parseExpression(LOWEST)
+	if err := p.expectNextToken(token.RBRACKET); err != nil {
+		fmt.Println("Expected closing ] missing in array indexing: ", err.Error())
+		return nil
+	}
+
+	return exp
 }

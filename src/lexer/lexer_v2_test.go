@@ -64,6 +64,8 @@ func Test_NextToken_V2(t *testing.T) {
   5 >= 10;
   5 <= 10;
 
+  [1, "a"];
+
   "abcd";
   ""
   ";
@@ -137,6 +139,12 @@ func Test_NextToken_V2(t *testing.T) {
 		{Type: token.INT, Literal: "5"},
 		{Type: token.LTE, Literal: "<="},
 		{Type: token.INT, Literal: "10"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.LBRACKET, Literal: "["},
+		{Type: token.INT, Literal: "1"},
+		{Type: token.COMMA, Literal: ","},
+		{Type: token.STR, Literal: "a"},
+		{Type: token.RBRACKET, Literal: "]"},
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.STR, Literal: "abcd"},
 		{Type: token.SEMICOLON, Literal: ";"},

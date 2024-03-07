@@ -320,6 +320,7 @@ func Test_BuiltinFunction(t *testing.T) {
 		{`len("asdf")`, 4},
 		{`len(1)`, "argument to `len` not supported. got INTEGER"},
 		{`len("asdf", "asdf")`, "wrong number of arguments. got=2. want=1"},
+		{`len([1 ,2, 3])`, 3},
 	} {
 		t.Run(fmt.Sprintf("Test built in fn: %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)
@@ -338,5 +339,49 @@ func Test_BuiltinFunction(t *testing.T) {
 				eq(t, true, testNullObj(t, evaluated))
 			}
 		})
+	}
+}
+
+func Test_ArrayLiterals(t *testing.T) {
+	input := `[1, 2 * 3, "asdf", true]`
+
+	evaluated := testEval(input)
+
+	result, ok := evaluated.(*object.Array)
+	eq(t, true, ok, "Failed to typecast to evaluated to *object.Array")
+	eq(t, 4, len(result.Elements), "Expected 4 elements in the array")
+	eq(t, true, testIntegerObj(t, result.Elements[0], 1))
+	eq(t, true, testIntegerObj(t, result.Elements[1], 6))
+	eq(t, true, testStringObj(t, result.Elements[2], "asdf"))
+	eq(t, true, testBooleanObj(t, result.Elements[3], true))
+}
+
+func Test_IndexingExpression(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected interface{}
+	}{
+		{"let a = [5]; a[0]", 5},
+		{"let a = [5]; a[1]", nil},
+		{"let a = [5]; a[-1]", nil},
+		{"let a = [1, 2, 3]; a[1 + 1]", 3},
+		{"[1, 2, 3][1]", 2},
+		{"let i=0; let a=[4]; a[i]", 4},
+		{"let a=[1,2,3]; a[0] + a[1] + a[2]", 6},
+		{`let a=[1, "a", true]; a[1]`, "a"},
+		{`let a=[1, "a", true]; a[2]`, true},
+	} {
+		evaluated := testEval(test.input)
+		switch expected := test.expected.(type) {
+		case int:
+			eq(t, true, testIntegerObj(t, evaluated, int64(expected)))
+		case string:
+			eq(t, true, testStringObj(t, evaluated, expected))
+		case bool:
+			eq(t, true, testBooleanObj(t, evaluated, expected))
+		default:
+			eq(t, true, testNullObj(t, evaluated))
+		}
+
 	}
 }

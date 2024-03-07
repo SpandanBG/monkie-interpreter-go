@@ -46,6 +46,10 @@ func (l_v2 *Lexer_V2) NextToken_V2() token.Token {
 		tok = token.Token{Type: token.LBRACE, Literal: string(l_v2.ch)}
 	case rune('}'):
 		tok = token.Token{Type: token.RBRACE, Literal: string(l_v2.ch)}
+	case rune('['):
+		tok = token.Token{Type: token.LBRACKET, Literal: string(l_v2.ch)}
+	case rune(']'):
+		tok = token.Token{Type: token.RBRACKET, Literal: string(l_v2.ch)}
 	case rune(','):
 		tok = token.Token{Type: token.COMMA, Literal: string(l_v2.ch)}
 	case rune(';'):

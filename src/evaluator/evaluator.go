@@ -52,6 +52,20 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.String{Value: node.Value}
 	case *ast.Boolean:
 		return nativeBoolToBooleanObj(node.Value)
+	case *ast.ArrayLiteral:
+		return evalArrayLiteral(node.Elements, env)
+	case *ast.IndexExpression:
+		left, ok := expectEval(node.Left, env)
+		if !ok {
+			return left
+		}
+
+		index, ok := expectEval(node.Index, env)
+		if !ok {
+			return index
+		}
+
+		return evalIndexExpression(left, index)
 	case *ast.PrefixExpression:
 		if right, ok := expectEval(node.Right, env); ok {
 			return evalPrefixExpression(node.Operator, right)
@@ -282,6 +296,36 @@ func evalIdentifier(id *ast.Identifier, env *object.Environment) object.Object {
 	}
 
 	return newError("identifier not found: %s", id.Value)
+}
+
+func evalArrayLiteral(elements []ast.Expression, env *object.Environment) object.Object {
+	elms, err := evalExpressions(elements, env)
+	if err != nil {
+		return err
+	}
+
+	return &object.Array{Elements: elms}
+}
+
+func evalIndexExpression(left object.Object, index object.Object) object.Object {
+	switch {
+	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return evalArrayIndexExp(left, index)
+	default:
+		return newError("index operator not supported: %s[%s]", left.Type(), index.Type())
+	}
+}
+
+func evalArrayIndexExp(left object.Object, index object.Object) object.Object {
+	arr := left.(*object.Array)
+	idx := index.(*object.Integer).Value
+
+	max := int64(len(arr.Elements) - 1)
+	if idx < 0 || idx > max {
+		return NULL
+	}
+
+	return arr.Elements[idx]
 }
 
 func applyFn(fn object.Object, args []object.Object) object.Object {
