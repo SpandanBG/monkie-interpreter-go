@@ -48,6 +48,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		// Expression
 	case *ast.IntegerLiteral:
 		return &object.Integer{Value: node.Value}
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
 	case *ast.Boolean:
 		return nativeBoolToBooleanObj(node.Value)
 	case *ast.PrefixExpression:
@@ -188,6 +190,10 @@ func evalInfixExpression(left object.Object, operator string, right object.Objec
 		return evalBooleanInfixExpression(left, operator, right)
 	}
 
+	if left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ {
+		return evalStringInfixExpression(left, operator, right)
+	}
+
 	return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
 }
 
@@ -216,6 +222,22 @@ func evalIntegerInfixExpression(left object.Object, operator string, right objec
 		return nativeBoolToBooleanObj(lVal >= rVal)
 	case token.LTE:
 		return nativeBoolToBooleanObj(lVal <= rVal)
+	}
+
+	return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+}
+
+func evalStringInfixExpression(left object.Object, operator string, right object.Object) object.Object {
+	lVal := left.(*object.String).Value
+	rVal := right.(*object.String).Value
+
+	switch token.TokenType(operator) {
+	case token.PLUS:
+		return &object.String{Value: lVal + rVal}
+	case token.EQ:
+		return nativeBoolToBooleanObj(lVal == rVal)
+	case token.NOT_EQ:
+		return nativeBoolToBooleanObj(lVal != rVal)
 	}
 
 	return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())

@@ -21,6 +21,7 @@ const (
 	// Identifiers + Literals
 	IDENT TokenType = "IDENT" // add, foobar, x, y, ...
 	INT             = "INT"   // 12345
+	STR             = "STR"   // string
 
 	// Operators
 	ASSIGN   TokenType = "="
@@ -54,6 +55,9 @@ const (
 	IF                 = "IF"
 	ELSE               = "ELSE"
 	RETURN             = "RETURN"
+
+	// String Tokens
+	DOUBLE_QUOTES TokenType = "\""
 )
 
 var keywords = map[string]TokenType{

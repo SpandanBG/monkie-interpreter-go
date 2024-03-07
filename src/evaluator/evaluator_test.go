@@ -45,6 +45,13 @@ func testBooleanObj(t *testing.T, obj object.Object, expected bool) bool {
 	return true
 }
 
+func testStringObj(t *testing.T, obj object.Object, expected string) bool {
+	result, ok := obj.(*object.String)
+	eq(t, true, ok, "Failed to typecast obj to object.String")
+	eq(t, expected, result.Value, "Expected string didn't match")
+	return true
+}
+
 func testNullObj(t *testing.T, obj object.Object) bool {
 	result, ok := obj.(*object.Null)
 	eq(t, true, ok, "Failed to typecast obj to object.Null")
@@ -102,10 +109,27 @@ func Test_EvalBooleanExpression(t *testing.T) {
 		{"(1 < 2) == true", true},
 		{"(1 > 2) == true", false},
 		{"(5 * 5) == 25 == true", true},
+		{"\"asdf\" == \"qwer\"", false},
+		{"\"asdf\" != \"qwer\"", true},
 	} {
 		t.Run(fmt.Sprintf("Tests for %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)
 			eq(t, true, testBooleanObj(t, evaluated, test.expected), "Did not match expected")
+		})
+	}
+}
+
+func Test_EvalStringExpression(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected string
+	}{
+		{"\"asdf\"", "asdf"},
+		{"\"asdf\" + \"qwer\"", "asdfqwer"},
+	} {
+		t.Run(fmt.Sprintf("Test string expresson for: %s", test.input), func(t *testing.T) {
+			evaluated := testEval(test.input)
+			eq(t, true, testStringObj(t, evaluated, test.expected), "Did not match expected")
 		})
 	}
 }
@@ -140,13 +164,17 @@ func Test_IfElseExpression(t *testing.T) {
 		{"if (1 > 2) { 10 }", nil},
 		{"if (1 < 2) { 10 } else { 20 }", 10},
 		{"if (1 > 2) { 10 } else { 20 }", 20},
+		{"if (1 > 2) { \"a\" } else { \"b\" }", "b"},
 	} {
 		t.Run(fmt.Sprintf("Test if-else for %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)
 
-			if integer, ok := test.expected.(int); ok {
-				eq(t, true, testIntegerObj(t, evaluated, int64(integer)))
-			} else {
+			switch expected := test.expected.(type) {
+			case int:
+				eq(t, true, testIntegerObj(t, evaluated, int64(expected)))
+			case string:
+				eq(t, true, testStringObj(t, evaluated, expected))
+			default:
 				eq(t, true, testNullObj(t, evaluated))
 			}
 		})
@@ -177,8 +205,11 @@ func Test_ErrorHandling(t *testing.T) {
 	}{
 		{"5 + true", "type mismatch: INTEGER + BOOLEAN"},
 		{"5 + true; 5", "type mismatch: INTEGER + BOOLEAN"},
+		{"\"asdf\" + true", "type mismatch: STRING + BOOLEAN"},
+		{"\"asdf\" + 5", "type mismatch: STRING + INTEGER"},
 		{"-true;", "unknown operator: -BOOLEAN"},
 		{"true + false;", "unknown operator: BOOLEAN + BOOLEAN"},
+		{"\"asdf\" - \"asdf\";", "unknown operator: STRING - STRING"},
 		{"5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"},
 		{"if (10 > 1) { true + false }", "unknown operator: BOOLEAN + BOOLEAN"},
 		{"if (10 > 1) { if (10 > 1) { return true + false; } return 1; }", "unknown operator: BOOLEAN + BOOLEAN"},
@@ -198,15 +229,24 @@ func Test_ErrorHandling(t *testing.T) {
 func Test_LetStatements(t *testing.T) {
 	for _, test := range []struct {
 		input    string
-		expected int64
+		expected interface{}
 	}{
+		{"let a = 5;", nil},
 		{"let a = 5; a;", 5},
+		{"let a = \"asdf\"; a;", "asdf"},
 		{"let a = 5 * 5; a;", 25},
 		{"let a = 5; let b = a; b", 5},
 		{"let a = 5; let b = a; let c = a + b + 5; c;", 15},
 	} {
 		t.Run(fmt.Sprintf("Test let statement for %s", test.input), func(t *testing.T) {
-			eq(t, true, testIntegerObj(t, testEval(test.input), test.expected))
+			switch expected := test.expected.(type) {
+			case int:
+				eq(t, true, testIntegerObj(t, testEval(test.input), int64(expected)))
+			case string:
+				eq(t, true, testStringObj(t, testEval(test.input), expected))
+			default:
+				eq(t, true, testNullObj(t, testEval(test.input)))
+			}
 		})
 	}
 }

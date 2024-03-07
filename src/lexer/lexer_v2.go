@@ -86,6 +86,12 @@ func (l_v2 *Lexer_V2) NextToken_V2() token.Token {
 		} else {
 			tok = token.Token{Type: token.LT, Literal: string(l_v2.ch)}
 		}
+	case rune('"'):
+		if str, ok := l_v2.readStr_v2(); ok {
+			tok = token.Token{Type: token.STR, Literal: str}
+		} else {
+			tok = token.Token{Type: token.ILLEGAL, Literal: string(l_v2.ch)}
+		}
 	case rune(0):
 		tok = token.Token{Type: token.EOF, Literal: string(l_v2.ch)}
 	default:
@@ -124,6 +130,21 @@ func (l_v2 *Lexer_V2) readChar_v2() {
 	}
 
 	l_v2.ch = ch
+}
+
+func (l_v2 *Lexer_V2) readStr_v2() (string, bool) {
+	var out bytes.Buffer
+	l_v2.readChar_v2()
+
+	for l_v2.ch != rune('"') {
+		if l_v2.ch == rune(0) {
+			return "", false
+		}
+		out.WriteRune(l_v2.ch)
+		l_v2.readChar_v2()
+	}
+
+	return out.String(), true
 }
 
 func (l_v2 *Lexer_V2) readGroup_v2(filterFn func(ch rune) bool) string {

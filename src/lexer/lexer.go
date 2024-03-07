@@ -86,6 +86,12 @@ func (l *Lexer) NextToken() token.Token {
 		} else {
 			tok = token.Token{Type: token.LT, Literal: string(l.ch)}
 		}
+	case '"':
+		if str, ok := l.readStr(); ok {
+			tok = token.Token{Type: token.STR, Literal: str}
+		} else {
+			tok = token.Token{Type: token.ILLEGAL, Literal: string(l.ch)}
+		}
 	case 0:
 		tok = token.Token{Type: token.EOF, Literal: ""}
 	default:
@@ -154,6 +160,22 @@ func (l *Lexer) readNumber() string {
 	}
 
 	return l.input[position:l.position]
+}
+
+// readStr - for string data type, skips the opening " reads the charracters till
+// the end " is reached. If no closing " is reached then returns ok as false
+func (l *Lexer) readStr() (string, bool) {
+	l.readChar()
+	position := l.position
+
+	for l.ch != '"' {
+		if l.ch == 0 {
+			return "", false
+		}
+		l.readChar()
+	}
+
+	return l.input[position:l.position], true
 }
 
 // skipWhitespace - skips all whitespace characters (\s \n \t \r) and moves the

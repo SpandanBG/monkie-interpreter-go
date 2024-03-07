@@ -62,6 +62,10 @@ func TestNextToken(t *testing.T) {
   5 != 10;
   5 >= 10;
   5 <= 10;
+
+  "abcd";
+  ""
+  "asdf;
   `
 
 	expectedTokens := []token.Token{
@@ -133,6 +137,10 @@ func TestNextToken(t *testing.T) {
 		{Type: token.LTE, Literal: "<="},
 		{Type: token.INT, Literal: "10"},
 		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.STR, Literal: "abcd"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.STR, Literal: ""},
+		{Type: token.ILLEGAL, Literal: "\x00"},
 		{Type: token.EOF, Literal: ""},
 	}
 

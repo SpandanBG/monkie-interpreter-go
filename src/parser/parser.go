@@ -70,6 +70,7 @@ func New(l *lexer.Lexer_V2) *Parser {
 
 	p.registerPrefixParser(token.IDENT, p.parseIdentifier)
 	p.registerPrefixParser(token.INT, p.parseIntegerLiteral)
+	p.registerPrefixParser(token.STR, p.parseStringLiteral)
 	p.registerPrefixParser(token.BANG, p.parsePrefixExpression)
 	p.registerPrefixParser(token.MINUS, p.parsePrefixExpression)
 	p.registerPrefixParser(token.TRUE, p.parseBoolean)
@@ -347,6 +348,11 @@ func (p *Parser) parseIntegerLiteral() ast.Expression {
 	}
 
 	return &ast.IntegerLiteral{Token: p.curToken, Value: intVal}
+}
+
+// parseStringLiteral - parse strings
+func (p *Parser) parseStringLiteral() ast.Expression {
+	return &ast.StringLiteral{Token: p.curToken, Value: p.curToken.Literal}
 }
 
 // parsePrefixExpression - parse a prefix expression

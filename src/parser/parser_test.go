@@ -51,9 +51,17 @@ func testIdentifier(t *testing.T, exp ast.Expression, value string) bool {
 
 func testBoolean(t *testing.T, exp ast.Expression, value bool) bool {
 	boolean, ok := exp.(*ast.Boolean)
-	eq(t, ok, true, "Failed to typecast exp to *ast.Identifier")
-	eq(t, value, boolean.Value, "ident.Value doesn't match expected")
-	eq(t, fmt.Sprintf("%t", value), boolean.TokenLiteral(), "ident.TokenLiteral() doesn't match expected")
+	eq(t, ok, true, "Failed to typecast exp to *ast.Boolean")
+	eq(t, value, boolean.Value, "boolean.Value doesn't match expected")
+	eq(t, fmt.Sprintf("%t", value), boolean.TokenLiteral(), "boolean.TokenLiteral() doesn't match expected")
+	return true
+}
+
+func testStringLiteral(t *testing.T, exp ast.Expression, value string) bool {
+	str, ok := exp.(*ast.StringLiteral)
+	eq(t, ok, true, "Failed to typecast exp to *ast.StringLiteral")
+	eq(t, value, str.Value, "str.Value doesn't match expected")
+	eq(t, value, str.TokenLiteral(), "str.TokenLiteral() doesn't match expected")
 	return true
 }
 
@@ -66,7 +74,11 @@ func testLiteralExpression(t *testing.T, exp ast.Expression, expected interface{
 	case int64:
 		return testIntegerLiteral(t, exp, int64(v))
 	case string:
-		return testIdentifier(t, exp, string(v))
+		if _, ok := exp.(*ast.Identifier); ok {
+			return testIdentifier(t, exp, string(v))
+		} else {
+			return testStringLiteral(t, exp, string(v))
+		}
 	}
 	t.Errorf("type of exp not handled. got=%T", exp)
 	return false
@@ -98,7 +110,8 @@ func checkParserErrs(t *testing.T, p *Parser) bool {
 func Test_LetStatement(t *testing.T) {
 	input := `let x = 5;
   let y = 10;
-  let foobar = 8723456;`
+  let foobar = 8723456;
+  let a = "asdf"`
 
 	l := lexer.New_V2(strings.NewReader(input))
 	p := New(l)
@@ -107,9 +120,9 @@ func Test_LetStatement(t *testing.T) {
 
 	eq(t, true, checkParserErrs(t, p))
 	notEq(t, nil, program, "ParseProgram() returned nil")
-	eq(t, 3, len(program.Statements), "program.Statements does not contain 3 statements")
+	eq(t, 4, len(program.Statements), "program.Statements does not contain 3 statements")
 
-	expectedIdentifiers := []string{"x", "y", "foobar"}
+	expectedIdentifiers := []string{"x", "y", "foobar", "a"}
 	for i, expectedIdentifier := range expectedIdentifiers {
 		stmt := program.Statements[i].(*ast.LetStatement)
 
@@ -127,6 +140,7 @@ func Test_LetStatements(t *testing.T) {
 		{"let x = 5;", "x", 5},
 		{"let y = true;", "y", true},
 		{"let foobar = y;", "foobar", "y"},
+		{"let a = \"asdf\";", "a", "asdf"},
 	} {
 		t.Run(fmt.Sprintf("Test ran for input %s", test.input), func(t *testing.T) {
 			l := lexer.New_V2(strings.NewReader(test.input))
@@ -149,8 +163,8 @@ func Test_LetStatements(t *testing.T) {
 func Test_ReturnStatement(t *testing.T) {
 	input := `return 5;
   return 10;
-
-  return add(5 ,10);`
+  return add(5 ,10);
+  return "asdf"`
 
 	l := lexer.New_V2(strings.NewReader(input))
 	p := New(l)
@@ -159,7 +173,7 @@ func Test_ReturnStatement(t *testing.T) {
 
 	eq(t, true, checkParserErrs(t, p))
 	notEq(t, nil, program, "ParseProgram() returned nil")
-	eq(t, 3, len(program.Statements), "program.Statement does not contain 3 statements")
+	eq(t, 4, len(program.Statements), "program.Statement does not contain 3 statements")
 
 	for _, stmt := range program.Statements {
 		returnStmt, ok := stmt.(*ast.ReturnStatement)
@@ -177,6 +191,7 @@ func Test_ReturnStatements(t *testing.T) {
 		{"return 5;", 5},
 		{"return true;", true},
 		{"return y;", "y"},
+		{"return \"asdf\"", "asdf"},
 	} {
 		t.Run(fmt.Sprintf("Test ran for input %s", test.input), func(t *testing.T) {
 			l := lexer.New_V2(strings.NewReader(test.input))
@@ -224,11 +239,30 @@ func Test_IntegerLiteralExpression(t *testing.T) {
 	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
 	eq(t, true, ok, "Failed at typecasting program.Statement[0] to *ast.ExpressionStatement")
 
-	ident, ok := stmt.Expression.(*ast.IntegerLiteral)
+	integer, ok := stmt.Expression.(*ast.IntegerLiteral)
 	eq(t, true, ok, "Failed at typecasting stmt.Epxression to *ast.IntegerLiteral")
 
-	eq(t, 5, ident.Value, "Identifier value mis-match")
-	eq(t, "5", ident.TokenLiteral(), "Identifier token literal mis-match")
+	eq(t, 5, integer.Value, "Int value mis-match")
+	eq(t, "5", integer.TokenLiteral(), "Int token literal mis-match")
+}
+
+func Test_StringLiteralExpression(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader(`"asdf";`))
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkParserErrs(t, p)
+
+	eq(t, 1, len(program.Statements), "Expected 1 statement in the program")
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed at typecasting program.Statement[0] to *ast.ExpressionStatement")
+
+	str, ok := stmt.Expression.(*ast.StringLiteral)
+	eq(t, true, ok, "Failed at typecasting stmt.Epxression to *ast.StringLiteral")
+
+	eq(t, "asdf", str.Value, "String value mis-match")
+	eq(t, "asdf", str.TokenLiteral(), "String token literal mis-match")
 }
 
 func Test_PrefixExpression(t *testing.T) {
@@ -287,9 +321,9 @@ func Test_InfixOperators(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		input    string
-		left     int64
+		left     interface{}
 		operator string
-		right    int64
+		right    interface{}
 	}{
 		{
 			name:     "test sum operator",
@@ -360,6 +394,41 @@ func Test_InfixOperators(t *testing.T) {
 			left:     5,
 			operator: "!=",
 			right:    5,
+		},
+		{
+			name:     "test sum operator for str",
+			input:    "\"asdf\" + \"qwer\";",
+			left:     "asdf",
+			operator: "+",
+			right:    "qwer",
+		},
+		{
+			name:     "test eq operator for str",
+			input:    "\"asdf\" == \"qwer\";",
+			left:     "asdf",
+			operator: "==",
+			right:    "qwer",
+		},
+		{
+			name:     "test not eq operator for str",
+			input:    "\"asdf\" != \"qwer\";",
+			left:     "asdf",
+			operator: "!=",
+			right:    "qwer",
+		},
+		{
+			name:     "test equal operator for bool",
+			input:    "true == true;",
+			left:     true,
+			operator: "==",
+			right:    true,
+		},
+		{
+			name:     "test not equal operator for bool",
+			input:    "true != true;",
+			left:     true,
+			operator: "!=",
+			right:    true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
