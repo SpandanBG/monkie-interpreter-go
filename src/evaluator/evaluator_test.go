@@ -52,6 +52,13 @@ func testStringObj(t *testing.T, obj object.Object, expected string) bool {
 	return true
 }
 
+func testErrorObj(t *testing.T, obj object.Object, expected string) bool {
+	result, ok := obj.(*object.Error)
+	eq(t, true, ok, "Failed to typecast obj to object.Error")
+	eq(t, expected, result.Message, "Expected string didn't match")
+	return true
+}
+
 func testNullObj(t *testing.T, obj object.Object) bool {
 	result, ok := obj.(*object.Null)
 	eq(t, true, ok, "Failed to typecast obj to object.Null")
@@ -302,4 +309,34 @@ func Test_Closure(t *testing.T) {
     addTwo(4);
   `
 	eq(t, true, testIntegerObj(t, testEval(input), 6))
+}
+
+func Test_BuiltinFunction(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected interface{}
+	}{
+		{`len("")`, 0},
+		{`len("asdf")`, 4},
+		{`len(1)`, "argument to `len` not supported. got INTEGER"},
+		{`len("asdf", "asdf")`, "wrong number of arguments. got=2. want=1"},
+	} {
+		t.Run(fmt.Sprintf("Test built in fn: %s", test.input), func(t *testing.T) {
+			evaluated := testEval(test.input)
+			switch expected := test.expected.(type) {
+			case int:
+				eq(t, true, testIntegerObj(t, evaluated, int64(expected)))
+			case string:
+				if _, ok := evaluated.(*object.Error); ok {
+					eq(t, true, testErrorObj(t, evaluated, expected))
+				} else {
+					eq(t, true, testStringObj(t, evaluated, expected))
+				}
+			case bool:
+				eq(t, true, testBooleanObj(t, evaluated, expected))
+			default:
+				eq(t, true, testNullObj(t, evaluated))
+			}
+		})
+	}
 }

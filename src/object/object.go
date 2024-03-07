@@ -9,6 +9,7 @@ import (
 )
 
 type ObjectType string
+type BuiltinFn func(args ...Object) Object
 
 const (
 	INTEGER_OBJ      ObjectType = "INTEGER"
@@ -18,6 +19,7 @@ const (
 	RETURN_VALUE_OBJ ObjectType = "RETURN_VALUE"
 	ERROR_OBJ        ObjectType = "ERROR"
 	FUNCTION         ObjectType = "FUNCTION"
+	BUILTIN_OBJ      ObjectType = "BUILTIN"
 )
 
 type Object interface {
@@ -129,4 +131,17 @@ func (f *Function) Inspect() string {
 	out.WriteString("\n")
 
 	return out.String()
+}
+
+// Built-in Function - predefined function that Monkie lang provides
+type Builtin struct {
+	Fn BuiltinFn
+}
+
+func (b *Builtin) Type() ObjectType {
+	return BUILTIN_OBJ
+}
+
+func (b *Builtin) Inspect() string {
+	return "built-in function"
 }

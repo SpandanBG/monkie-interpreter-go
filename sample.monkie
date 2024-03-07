@@ -7,4 +7,4 @@ let counter = fn(x) {
   }
 };
 
-counter(0)
+print(counter(0))

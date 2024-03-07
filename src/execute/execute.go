@@ -28,7 +28,5 @@ func Execute(filepath string) {
 	switch result := evaluator.Eval(program, env).(type) {
 	case *object.Error:
 		fmt.Println("Error Occured: ", result.Message)
-	default:
-		fmt.Println(result.Inspect())
 	}
 }
