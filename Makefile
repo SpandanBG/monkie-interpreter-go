@@ -8,5 +8,8 @@ dev:
 repl:
 	go run src/main.go --repl
 
+exe:
+	go run src/main.go --exe=$(FILE)
+
 test:
 	go test -coverprofile=coverage.out ./...
