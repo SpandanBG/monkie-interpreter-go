@@ -9,7 +9,7 @@ import (
 var builtins = map[string]*object.Builtin{
 	`len`: {Fn: func(args ...object.Object) object.Object {
 		if len(args) != 1 {
-			return newError("wrong number of arguments. got=%d. want=1", len(args))
+			return newError("wrong number of arguments. got=%d, want=1", len(args))
 		}
 
 		switch arg := args[0].(type) {
@@ -35,6 +35,24 @@ var builtins = map[string]*object.Builtin{
 		if len(arr) > 0 {
 			return arr[0]
 		}
+		return NULL
+	}},
+
+	`last`: {Fn: func(args ...object.Object) object.Object {
+		if len(args) != 1 {
+			return newError("wrong number of arguments. got=%d, want=1", len(args))
+		}
+
+		arr, ok := args[0].(*object.Array)
+		if !ok {
+			return newError("argument to `first` must be ARRAY, got %s", args[0].Type())
+		}
+
+		length := len(arr.Elements)
+		if length > 0 {
+			return arr.Elements[length-1]
+		}
+
 		return NULL
 	}},
 

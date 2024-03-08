@@ -319,11 +319,15 @@ func Test_BuiltinFunction(t *testing.T) {
 		{`len("")`, 0},
 		{`len("asdf")`, 4},
 		{`len(1)`, "argument to `len` not supported. got INTEGER"},
-		{`len("asdf", "asdf")`, "wrong number of arguments. got=2. want=1"},
+		{`len("asdf", "asdf")`, "wrong number of arguments. got=2, want=1"},
 		{`len([1 ,2, 3])`, 3},
 		{`first([1, 2, 3])`, 1},
 		{`first([1], [2, 3])`, "wrong number of arguments. got=2, want=1"},
 		{`first(1)`, "argument to `first` must be ARRAY, got INTEGER"},
+		{`last([1])`, 1},
+		{`last([1, 2])`, 2},
+		{`last([1], [2, 3])`, "wrong number of arguments. got=2, want=1"},
+		{`last(1)`, "argument to `first` must be ARRAY, got INTEGER"},
 	} {
 		t.Run(fmt.Sprintf("Test built in fn: %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)
