@@ -347,11 +347,14 @@ func Test_BuiltinFunction(t *testing.T) {
 		{`last([1])`, 1},
 		{`last([1, 2])`, 2},
 		{`last([1], [2, 3])`, "wrong number of arguments. got=2, want=1"},
-		{`last(1)`, "argument to `first` must be ARRAY, got INTEGER"},
+		{`last(1)`, "argument to `last` must be ARRAY, got INTEGER"},
 		{`rest([1])`, []interface{}{}},
 		{`rest([1, 2, 3])`, []interface{}{2, 3}},
 		{`rest([1], [2, 3])`, "wrong number of arguments. got=2, want=1"},
-		{`rest(1)`, "argument to `first` must be ARRAY, got INTEGER"},
+		{`rest(1)`, "argument to `rest` must be ARRAY, got INTEGER"},
+		{`let a = [1, 2]; push(a, 3); a`, []interface{}{1, 2, 3}},
+		{`push([1])`, "wrong number of arguments. got=1, want=2"},
+		{`push(1, 1)`, "first argument to `push` must be ARRAY, got INTEGER"},
 	} {
 		t.Run(fmt.Sprintf("Test built in fn: %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)
