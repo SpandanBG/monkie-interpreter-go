@@ -59,6 +59,26 @@ func testErrorObj(t *testing.T, obj object.Object, expected string) bool {
 	return true
 }
 
+func testArrayObj(t *testing.T, obj object.Object, expected []interface{}) bool {
+	result, ok := obj.(*object.Array)
+	eq(t, true, ok, "Failed to typecast obj to object.Array")
+
+	for i, exp := range expected {
+		switch exp := exp.(type) {
+		case int:
+			eq(t, true, testIntegerObj(t, result.Elements[i], int64(exp)))
+		case string:
+			eq(t, true, testStringObj(t, result.Elements[i], exp))
+		case bool:
+			eq(t, true, testBooleanObj(t, result.Elements[i], exp))
+		default:
+			eq(t, true, testNullObj(t, result.Elements[i]))
+		}
+	}
+
+	return true
+}
+
 func testNullObj(t *testing.T, obj object.Object) bool {
 	result, ok := obj.(*object.Null)
 	eq(t, true, ok, "Failed to typecast obj to object.Null")
@@ -328,6 +348,10 @@ func Test_BuiltinFunction(t *testing.T) {
 		{`last([1, 2])`, 2},
 		{`last([1], [2, 3])`, "wrong number of arguments. got=2, want=1"},
 		{`last(1)`, "argument to `first` must be ARRAY, got INTEGER"},
+		{`rest([1])`, []interface{}{}},
+		{`rest([1, 2, 3])`, []interface{}{2, 3}},
+		{`rest([1], [2, 3])`, "wrong number of arguments. got=2, want=1"},
+		{`rest(1)`, "argument to `first` must be ARRAY, got INTEGER"},
 	} {
 		t.Run(fmt.Sprintf("Test built in fn: %s", test.input), func(t *testing.T) {
 			evaluated := testEval(test.input)
@@ -342,6 +366,8 @@ func Test_BuiltinFunction(t *testing.T) {
 				}
 			case bool:
 				eq(t, true, testBooleanObj(t, evaluated, expected))
+			case []interface{}:
+				eq(t, true, testArrayObj(t, evaluated, expected))
 			default:
 				eq(t, true, testNullObj(t, evaluated))
 			}
