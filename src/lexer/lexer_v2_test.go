@@ -67,6 +67,8 @@ func Test_NextToken_V2(t *testing.T) {
   [1, "a"];
   {"a": 1};
 
+  macro(x,y){x+y};
+
   "abcd";
   ""
   ";
@@ -151,6 +153,18 @@ func Test_NextToken_V2(t *testing.T) {
 		{Type: token.STR, Literal: "a"},
 		{Type: token.COLON, Literal: ":"},
 		{Type: token.INT, Literal: "1"},
+		{Type: token.RBRACE, Literal: "}"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.MACRO, Literal: "macro"},
+		{Type: token.LPAREN, Literal: "("},
+		{Type: token.IDENT, Literal: "x"},
+		{Type: token.COMMA, Literal: ","},
+		{Type: token.IDENT, Literal: "y"},
+		{Type: token.RPAREN, Literal: ")"},
+		{Type: token.LBRACE, Literal: "{"},
+		{Type: token.IDENT, Literal: "x"},
+		{Type: token.PLUS, Literal: "+"},
+		{Type: token.IDENT, Literal: "y"},
 		{Type: token.RBRACE, Literal: "}"},
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.STR, Literal: "abcd"},

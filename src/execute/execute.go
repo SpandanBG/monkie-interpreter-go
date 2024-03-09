@@ -25,7 +25,12 @@ func Execute(filepath string) {
 	}
 
 	env := object.NewEnvironment()
-	switch result := evaluator.Eval(program, env).(type) {
+	macroEnv := object.NewEnvironment()
+
+	evaluator.DefineMacros(program, macroEnv)
+	expanded := evaluator.ExpandMacros(program, macroEnv)
+
+	switch result := evaluator.Eval(expanded, env).(type) {
 	case *object.Error:
 		fmt.Println("Error Occured: ", result.Message)
 	}

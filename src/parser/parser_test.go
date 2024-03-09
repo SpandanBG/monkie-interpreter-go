@@ -737,3 +737,25 @@ func Test_HashLiteral(t *testing.T) {
 		})
 	}
 }
+
+func Test_MacroLiteral(t *testing.T) {
+	l := lexer.New_V2(strings.NewReader("macro(x,y){ x + y; }"))
+	p := New(l)
+	program := p.ParseProgram()
+
+	checkParserErrs(t, p)
+	eq(t, 1, len(program.Statements), "Expected 1 program statement")
+
+	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecast program.Statements[0] to *ast.ExpressionStatement")
+
+	macro, ok := stmt.Expression.(*ast.MacroLiteral)
+	eq(t, true, ok, "Failed to typecast stmt to *ast.MacroLiteral")
+	eq(t, 2, len(macro.Parameters), "Expected 2 params")
+	eq(t, true, testLiteralExpression(t, macro.Parameters[0], "x"))
+	eq(t, true, testLiteralExpression(t, macro.Parameters[1], "y"))
+
+	bdy, ok := macro.Body.Statements[0].(*ast.ExpressionStatement)
+	eq(t, true, ok, "Failed to typecast macro.Body to *ast.ExpressionStatement")
+	eq(t, true, testInfixExpression(t, bdy.Expression, "x", "+", "y"))
+}

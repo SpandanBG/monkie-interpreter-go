@@ -1,0 +1,9 @@
+let unless = macro(condition, consequnce, alternative) {
+  quote(if (!(unquote(condtion))) {
+    unquote(consequnce);
+  } else {
+    unquote(altervative);
+  });
+}
+
+unless(10 > 5, print("not greater"), print("greater"));

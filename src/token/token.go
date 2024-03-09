@@ -58,6 +58,7 @@ const (
 	IF                 = "IF"
 	ELSE               = "ELSE"
 	RETURN             = "RETURN"
+	MACRO              = "MACRO"
 
 	// String Tokens
 	DOUBLE_QUOTES TokenType = "\""
@@ -71,6 +72,7 @@ var keywords = map[string]TokenType{
 	"if":     IF,
 	"else":   ELSE,
 	"return": RETURN,
+	"macro":  MACRO,
 }
 
 // LookupIdent - Checks the keywords map. If the keyword is mapped to a token type

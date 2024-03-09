@@ -80,6 +80,7 @@ func New(l *lexer.Lexer_V2) *Parser {
 	p.registerPrefixParser(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefixParser(token.IF, p.parseIfExpression)
 	p.registerPrefixParser(token.FUNCTION, p.parseFunctionLiteral)
+	p.registerPrefixParser(token.MACRO, p.parseMacroLiteral)
 	p.registerPrefixParser(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefixParser(token.LBRACE, p.parseHashLiteral)
 
@@ -479,6 +480,25 @@ func (p *Parser) parseFunctionLiteral() ast.Expression {
 
 	if err := p.expectNextToken(token.LBRACE); err != nil {
 		fmt.Println("Expected { for function body is missing: ", err.Error())
+		return nil
+	}
+
+	lit.Body = p.parseBlockStatement()
+	return lit
+}
+
+func (p *Parser) parseMacroLiteral() ast.Expression {
+	lit := &ast.MacroLiteral{Token: p.curToken}
+
+	if err := p.expectNextToken(token.LPAREN); err != nil {
+		fmt.Println("Expected ( for macro params is missing: ", err.Error())
+		return nil
+	}
+
+	lit.Parameters = p.parseFunctionParameters()
+
+	if err := p.expectNextToken(token.LBRACE); err != nil {
+		fmt.Println("Expected { for macro body is missing: ", err.Error())
 		return nil
 	}
 
