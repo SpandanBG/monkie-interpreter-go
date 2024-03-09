@@ -54,6 +54,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return nativeBoolToBooleanObj(node.Value)
 	case *ast.ArrayLiteral:
 		return evalArrayLiteral(node.Elements, env)
+	case *ast.HashLiteral:
+		return evalHashLiteral(node.Pairs, env)
 	case *ast.IndexExpression:
 		left, ok := expectEval(node.Left, env)
 		if !ok {
@@ -307,10 +309,37 @@ func evalArrayLiteral(elements []ast.Expression, env *object.Environment) object
 	return &object.Array{Elements: elms}
 }
 
+func evalHashLiteral(pairs map[ast.Expression]ast.Expression, env *object.Environment) object.Object {
+	hash := &object.Hash{Pairs: make(map[object.HashKey]object.HashPair)}
+
+	for keyExp, valueExp := range pairs {
+		key, ok := expectEval(keyExp, env)
+		if !ok {
+			return key
+		}
+
+		hashable, ok := key.(object.Hashable)
+		if !ok {
+			return newError("key of type %s is not hashable", key.Type())
+		}
+
+		value, ok := expectEval(valueExp, env)
+		if !ok {
+			return value
+		}
+
+		hash.Pairs[hashable.Hash()] = object.HashPair{Key: key, Value: value}
+	}
+
+	return hash
+}
+
 func evalIndexExpression(left object.Object, index object.Object) object.Object {
 	switch {
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
 		return evalArrayIndexExp(left, index)
+	case left.Type() == object.HASH_OBJ:
+		return evalHashIndexExp(left, index)
 	default:
 		return newError("index operator not supported: %s[%s]", left.Type(), index.Type())
 	}
@@ -326,6 +355,20 @@ func evalArrayIndexExp(left object.Object, index object.Object) object.Object {
 	}
 
 	return arr.Elements[idx]
+}
+
+func evalHashIndexExp(left object.Object, index object.Object) object.Object {
+	hash := left.(*object.Hash)
+	hashable, ok := index.(object.Hashable)
+	if !ok {
+		return newError("index of type %s cannot be used as hash index", index.Type())
+	}
+
+	if value, ok := hash.Pairs[hashable.Hash()]; ok {
+		return value.Value
+	}
+
+	return NULL
 }
 
 func applyFn(fn object.Object, args []object.Object) object.Object {

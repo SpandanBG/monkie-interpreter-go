@@ -33,35 +33,35 @@ func testEval(input string) object.Object {
 
 func testIntegerObj(t *testing.T, obj object.Object, expected int64) bool {
 	result, ok := obj.(*object.Integer)
-	eq(t, true, ok, "Failed to typecast obj to object.Integer")
+	eq(t, true, ok, fmt.Sprintf("Failed to typecast obj of type %s to object.Integer", obj.Type()))
 	eq(t, expected, result.Value, "Expected int64 didn't match")
 	return true
 }
 
 func testBooleanObj(t *testing.T, obj object.Object, expected bool) bool {
 	result, ok := obj.(*object.Boolean)
-	eq(t, true, ok, "Failed to typecast obj to object.Boolean")
+	eq(t, true, ok, fmt.Sprintf("Failed to typecast obj of type %s to object.Boolean", obj.Type()))
 	eq(t, expected, result.Value, "Expected boolean didn't match")
 	return true
 }
 
 func testStringObj(t *testing.T, obj object.Object, expected string) bool {
 	result, ok := obj.(*object.String)
-	eq(t, true, ok, "Failed to typecast obj to object.String")
+	eq(t, true, ok, fmt.Sprintf("Failed to typecast obj of type %s to object.String", obj.Type()))
 	eq(t, expected, result.Value, "Expected string didn't match")
 	return true
 }
 
 func testErrorObj(t *testing.T, obj object.Object, expected string) bool {
 	result, ok := obj.(*object.Error)
-	eq(t, true, ok, "Failed to typecast obj to object.Error")
+	eq(t, true, ok, fmt.Sprintf("Failed to typecast obj of type %s to object.Error", obj.Type()))
 	eq(t, expected, result.Message, "Expected string didn't match")
 	return true
 }
 
 func testArrayObj(t *testing.T, obj object.Object, expected []interface{}) bool {
 	result, ok := obj.(*object.Array)
-	eq(t, true, ok, "Failed to typecast obj to object.Array")
+	eq(t, true, ok, fmt.Sprintf("Failed to typecast obj of type %s to object.Array", obj.Type()))
 
 	for i, exp := range expected {
 		switch exp := exp.(type) {
@@ -81,7 +81,7 @@ func testArrayObj(t *testing.T, obj object.Object, expected []interface{}) bool 
 
 func testNullObj(t *testing.T, obj object.Object) bool {
 	result, ok := obj.(*object.Null)
-	eq(t, true, ok, "Failed to typecast obj to object.Null")
+	eq(t, true, ok, fmt.Sprintf("Failed to typecast obj of type %s to object.Null", obj.Type()))
 	eq(t, NULL, result, "Expected NULL. Didn't match")
 	return true
 }
@@ -406,8 +406,13 @@ func Test_IndexingExpression(t *testing.T) {
 		{"let a=[1,2,3]; a[0] + a[1] + a[2]", 6},
 		{`let a=[1, "a", true]; a[1]`, "a"},
 		{`let a=[1, "a", true]; a[2]`, true},
+		{`{true: 1}[true]`, 1},
+		{`{"asdf": "asdf"}["asdf"]`, "asdf"},
+		{`{1: 2}[1]`, 2},
+		{`{1: 1}[2]`, nil},
 	} {
 		evaluated := testEval(test.input)
+
 		switch expected := test.expected.(type) {
 		case int:
 			eq(t, true, testIntegerObj(t, evaluated, int64(expected)))
@@ -418,6 +423,39 @@ func Test_IndexingExpression(t *testing.T) {
 		default:
 			eq(t, true, testNullObj(t, evaluated))
 		}
+	}
+}
 
+func Test_HashLiteral(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected interface{}
+	}{
+		{`let a = {"a": 1}; a["a"]`, 1},
+		{`let b = "b", {"b": 2}[b]`, 2},
+		{`let a = fn(){}; {a: 1}`, "key of type FUNCTION is not hashable"},
+		{`let a = {"a": 1}; a[fn(){}]`, "index of type FUNCTION cannot be used as hash index"},
+	} {
+		t.Run(fmt.Sprintf("Test Hash"), func(t *testing.T) {
+			evaluated := testEval(test.input)
+
+			switch expected := test.expected.(type) {
+			case int:
+				eq(t, true, testIntegerObj(t, evaluated, int64(expected)))
+			case string:
+				switch evaluated.(type) {
+				case *object.String:
+					eq(t, true, testStringObj(t, evaluated, expected))
+				case *object.Error:
+					eq(t, true, testErrorObj(t, evaluated, expected))
+				default:
+					eq(t, true, testNullObj(t, evaluated))
+				}
+			case bool:
+				eq(t, true, testBooleanObj(t, evaluated, expected))
+			default:
+				eq(t, true, testNullObj(t, evaluated))
+			}
+		})
 	}
 }

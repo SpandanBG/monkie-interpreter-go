@@ -42,6 +42,7 @@ const (
 	// Delimiters
 	COMMA     TokenType = ","
 	SEMICOLON           = ";"
+	COLON               = ":"
 	LPAREN              = "("
 	RPAREN              = ")"
 	LBRACE              = "{"

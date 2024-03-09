@@ -81,6 +81,7 @@ func New(l *lexer.Lexer_V2) *Parser {
 	p.registerPrefixParser(token.IF, p.parseIfExpression)
 	p.registerPrefixParser(token.FUNCTION, p.parseFunctionLiteral)
 	p.registerPrefixParser(token.LBRACKET, p.parseArrayLiteral)
+	p.registerPrefixParser(token.LBRACE, p.parseHashLiteral)
 
 	p.registerInfixParser(token.PLUS, p.parseInfixExpression)
 	p.registerInfixParser(token.MINUS, p.parseInfixExpression)
@@ -531,6 +532,40 @@ func (p *Parser) parseArrayLiteral() ast.Expression {
 	}
 	array.Elements = elements
 	return &array
+}
+
+// parseHashLiteral - parse harse literal
+func (p *Parser) parseHashLiteral() ast.Expression {
+	hash := &ast.HashLiteral{Token: p.curToken, Pairs: map[ast.Expression]ast.Expression{}}
+
+	for !p.peekTokenIs(token.RBRACE) {
+		p.nextToken()
+
+		key := p.parseExpression(LOWEST)
+
+		if err := p.expectNextToken(token.COLON); err != nil {
+			fmt.Println("Expected : missing in hash: ", err.Error())
+			return nil
+		}
+		p.nextToken()
+
+		value := p.parseExpression(LOWEST)
+		hash.Pairs[key] = value
+
+		if !p.peekTokenIs(token.RBRACE) {
+			if err := p.expectNextToken(token.COMMA); err != nil {
+				fmt.Println("Expected , missing in hash: ", err.Error())
+				return nil
+			}
+		}
+	}
+
+	if err := p.expectNextToken(token.RBRACE); err != nil {
+		fmt.Println("Expected closing } in hash: ", err.Error())
+		return nil
+	}
+
+	return hash
 }
 
 // parseExpressionList - parses a list of expression till the closing token is met

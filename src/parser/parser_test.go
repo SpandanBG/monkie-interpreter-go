@@ -709,3 +709,31 @@ func Test_IndexExpression(t *testing.T) {
 	eq(t, true, testIdentifier(t, iExp.Left, "arr"))
 	eq(t, true, testInfixExpression(t, iExp.Index, 1, "+", 1))
 }
+
+func Test_HashLiteral(t *testing.T) {
+	for _, test := range []struct {
+		input    string
+		expected string
+	}{
+		{`{"a": 1, "b": 2}`, `{"a" : 1, "b" : 2}`},
+		{`{}`, `{}`},
+		{`{"a": 0 + 1}`, `{"a" : (0 + 1)}`},
+	} {
+		t.Run(fmt.Sprintf("Test Hash Literal for %s", test.input), func(t *testing.T) {
+			l := lexer.New_V2(strings.NewReader(test.input))
+			p := New(l)
+			program := p.ParseProgram()
+
+			checkParserErrs(t, p)
+
+			eq(t, 1, len(program.Statements), "Expected 1 program statement")
+
+			stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+			eq(t, true, ok, "Failed to typecast program.Statements[0] to *ast.ExpressionStatement")
+
+			hash, ok := stmt.Expression.(*ast.HashLiteral)
+			eq(t, true, ok, "Failed to typecast stmt.Expression to *ast.HashLiteral")
+			eq(t, test.expected, hash.String(), "Stringify didn't match")
+		})
+	}
+}
