@@ -23,6 +23,7 @@ const (
 	BUILTIN_OBJ      ObjectType = "BUILTIN"
 	ARRAY_OBJ        ObjectType = "ARRAY"
 	HASH_OBJ         ObjectType = "HASH"
+	QUOTE_OBJ        ObjectType = "QUOTE"
 )
 
 type Object interface {
@@ -229,4 +230,17 @@ func (s *String) Hash() HashKey {
 	h := fnv.New64()
 	h.Write([]byte(s.Value))
 	return HashKey{Type: s.Type(), Value: h.Sum64()}
+}
+
+// Quote - Macro quote AST
+type Quote struct {
+	Node ast.Node
+}
+
+func (q *Quote) Type() ObjectType {
+	return QUOTE_OBJ
+}
+
+func (q *Quote) Inspect() string {
+	return fmt.Sprintf("QUOTE(%s)", q.Node.String())
 }

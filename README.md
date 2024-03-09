@@ -29,3 +29,7 @@ Here, instead of using a existing parser generators (BNF / EBNF), we gonna make 
 
 ### The parser we going to use for Monkie lang
 We are going to write is a recursive descent parser. This is specifically "top down operator precedence" parser (Pratt parser).
+
+## MACRO System
+Based on Exlir's Quote / Unquote. 
+From the [Interpreter Book: Lost Chapter](https://interpreterbook.com/lost/)

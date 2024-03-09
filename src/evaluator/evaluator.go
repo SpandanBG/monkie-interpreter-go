@@ -93,6 +93,13 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.FunctionLiteral:
 		return &object.Function{Parameters: node.Parameters, Env: env, Body: node.Body}
 	case *ast.CallExpression:
+		if node.Function.TokenLiteral() == QUOTE_LITERAL {
+			if len(node.Arguments) != 1 {
+				return newError("wrong number of arguments. got=%d, want=2", len(node.Arguments))
+			}
+			return quote(node.Arguments[0])
+		}
+
 		fn, ok := expectEval(node.Function, env)
 		if !ok {
 			return fn
