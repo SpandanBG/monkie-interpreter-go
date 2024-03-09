@@ -62,12 +62,12 @@ type String struct {
 	Value string
 }
 
-func (b *String) Type() ObjectType {
+func (s *String) Type() ObjectType {
 	return STRING_OBJ
 }
 
-func (b *String) Inspect() string {
-	return b.Value
+func (s *String) Inspect() string {
+	return s.Value
 }
 
 // Null - null obj type

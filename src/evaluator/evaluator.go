@@ -97,7 +97,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			if len(node.Arguments) != 1 {
 				return newError("wrong number of arguments. got=%d, want=2", len(node.Arguments))
 			}
-			return quote(node.Arguments[0])
+			return quote(node.Arguments[0], env)
 		}
 
 		fn, ok := expectEval(node.Function, env)
